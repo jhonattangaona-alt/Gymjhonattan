@@ -1,1234 +1,1638 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mi Rutina de Pesas</title>
-
-  <!-- PWA & iOS Safari Config -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Mi Rutina">
-  <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/192/dumb-bell-emoji.png">
-
-  <!-- Chart.js CDN para el gráfico de peso -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    :root {
-      --bg-color: #0F172A;
-      --card-bg: #1E293B;
-      --accent-color: #38BDF8;
-      --accent-hover: #0284C7;
-      --text-main: #F8FAFC;
-      --text-muted: #94A3B8;
-      --border-color: #334155;
-      --success-color: #22C55E;
-      --warning-color: #F59E0B;
-      --danger-color: #EF4444;
-      --radius: 16px;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      padding: 20px 16px 40px;
-      max-width: 500px;
-      margin: 0 auto;
-      min-height: 100vh;
-    }
-
-    /* Modal de Onboarding / Perfil */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .modal-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius);
-      padding: 24px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .modal-title {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--accent-color);
-    }
-
-    .modal-subtitle {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 20px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px 14px;
-      background: #0F172A;
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      color: var(--text-main);
-      font-size: 1rem;
-      outline: none;
-    }
-
-    .form-group input:focus {
-      border-color: var(--accent-color);
-    }
-
-    .btn-primary {
-      width: 100%;
-      padding: 14px;
-      background: var(--accent-color);
-      color: #0F172A;
-      border: none;
-      border-radius: 12px;
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-primary:active {
-      background: var(--accent-hover);
-    }
-
-    .btn-success {
-      background: var(--success-color);
-      color: #0F172A;
-    }
-
-    .btn-warning {
-      background: var(--warning-color);
-      color: #0F172A;
-    }
-
-    .btn-secondary {
-      background: #334155;
-      color: var(--text-main);
-    }
-
-    /* Header Principal */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .user-greeting {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--text-main);
-    }
-
-    .user-sub {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .btn-edit-profile {
-      background: #334155;
-      color: var(--text-main);
-      border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    /* Tarjetas de Estadísticas */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .stat-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 10px 4px;
-      text-align: center;
-    }
-
-    .stat-val {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--accent-color);
-    }
-
-    .stat-lbl {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* Banner de Recordatorio / Alerta de Hoy */
-    .alert-banner {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid var(--warning-color);
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .alert-text {
-      font-size: 0.85rem;
-      color: var(--warning-color);
-      font-weight: 600;
-    }
-
-    .alert-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn-xs {
-      padding: 6px 10px;
-      font-size: 0.75rem;
-      border-radius: 6px;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    /* Selector de Pestañas */
-    .tab-buttons {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 3px;
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 4px;
-      margin-bottom: 20px;
-      border: 1px solid var(--border-color);
-    }
-
-    .tab-btn {
-      padding: 8px 2px;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 0.7rem;
-      font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active {
-      background: var(--accent-color);
-      color: #0F172A;
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    /* Tarjetas de Ejercicios */
-    .exercise-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 14px;
-    }
-
-    .ex-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .ex-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-    }
-
-    .ex-badge {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent-color);
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .ex-details {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      line-height: 1.4;
-    }
-
-    /* Sets / Reps Checkbox */
-    .sets-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    button.set-box {
-      flex: 1;
-      background: #0F172A;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 10px 4px;
-      text-align: center;
-      cursor: pointer;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      user-select: none;
-      outline: none;
-    }
-
-    button.set-box.completed {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: var(--success-color);
-      color: var(--success-color);
-      font-weight: 700;
-    }
-
-    /* Secciones, Calendario e Historial */
-    .section-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .calendar-item {
-      background: #0F172A;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .cal-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .cal-title {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: var(--accent-color);
-    }
-
-    .cal-date {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .cal-status {
-      font-size: 0.75rem;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-weight: 700;
-    }
-
-    .status-pending {
-      background: rgba(245, 158, 11, 0.2);
-      color: var(--warning-color);
-    }
-
-    .status-done {
-      background: rgba(34, 197, 94, 0.2);
-      color: var(--success-color);
-    }
-
-    .status-snoozed {
-      background: rgba(56, 189, 248, 0.2);
-      color: var(--accent-color);
-    }
-
-    .cal-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .chart-container {
-      position: relative;
-      height: 200px;
-      width: 100%;
-      margin-top: 10px;
-    }
-
-    .history-card {
-      background: #0F172A;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-
-    .history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .history-title {
-      font-weight: 700;
-      color: var(--accent-color);
-      font-size: 0.95rem;
-    }
-
-    .history-date {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .history-body {
-      font-size: 0.85rem;
-      color: var(--text-main);
-      line-height: 1.5;
-    }
-
-    .btn-delete {
-      background: transparent;
-      border: none;
-      color: var(--danger-color);
-      font-size: 0.8rem;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-
-    .weight-log-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border-color);
-      font-size: 0.9rem;
-    }
-
-    .weight-log-item:last-child {
-      border-bottom: none;
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--success-color);
-      color: #0F172A;
-      padding: 12px 20px;
-      border-radius: 20px;
-      font-weight: 700;
-      font-size: 0.9rem;
-      box-shadow: 0 10px 15px rgba(0,0,0,0.3);
-      z-index: 2000;
-      transition: opacity 0.3s;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FitDumbbell - Mi Entrenamiento y Peso iOS</title>
+    
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FitDumbbell">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/isometric/180/dumbbell.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ios: {
+                            bg: '#000000',
+                            card: '#1c1c1e',
+                            cardSecondary: '#2c2c2e',
+                            blue: '#0A84FF',
+                            green: '#30D158',
+                            orange: '#FF9F0A',
+                            red: '#FF453A',
+                            purple: '#BF5AF2',
+                            teal: '#64D2FF',
+                            gray: '#8E8E93',
+                            gray2: '#aeaeb2',
+                            gray6: '#1c1c1e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Helvetica Neue"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #000000;
+        }
+        
+        .glass-nav {
+            background: rgba(28, 28, 30, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .glass-header {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        @keyframes timerPulse {
+            0% { transform: scale(0.98); opacity: 0.85; }
+            50% { transform: scale(1.02); opacity: 1; }
+            100% { transform: scale(0.98); opacity: 0.85; }
+        }
+        .pulse-active {
+            animation: timerPulse 2s infinite ease-in-out;
+        }
+    </style>
 </head>
-<body>
+<body class="text-white font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-ios-blue selection:text-white">
 
-  <!-- MODAL ONBOARDING / PERFIL -->
-  <div id="profileModal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header-row">
-        <div class="modal-title">Configurar Perfil 💪</div>
-        <button type="button" class="btn-delete" style="font-size: 1.2rem; margin:0;" onclick="closeProfileModal()">✕</button>
-      </div>
-      <div class="modal-subtitle">Guarda tus datos para medir tu evolución.</div>
-      
-      <form id="profileForm">
-        <div class="form-group">
-          <label for="inputName">Tu Nombre:</label>
-          <input type="text" id="inputName" placeholder="Ej: Carlos" required>
+    <!-- HEADER SUPERIOR (iOS Style) -->
+    <header class="sticky top-0 z-40 glass-header border-b border-zinc-900 px-5 pt-3 pb-3 transition-all duration-300">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <button onclick="openProfileModal()" class="w-9 h-9 rounded-full bg-gradient-to-tr from-ios-blue via-ios-purple to-ios-green p-0.5 shadow-md active:scale-95 transition-transform">
+                    <div class="w-full h-full bg-zinc-900 rounded-full flex items-center justify-center text-xs font-black text-white" id="header-avatar-text">
+                        --
+                    </div>
+                </button>
+                <div>
+                    <div class="flex items-center space-x-1">
+                        <h1 class="text-base font-extrabold tracking-tight leading-none text-white" id="header-user-name">Hola, Atleta</h1>
+                        <button onclick="openProfileModal()" class="text-ios-gray hover:text-white p-0.5">
+                            <i data-lucide="edit-3" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-ios-gray font-medium tracking-wide uppercase mt-0.5" id="current-date-display">Cargando...</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <!-- Session Live Clock Banner -->
+                <div id="header-session-status" class="px-3 py-1.5 bg-zinc-900/90 border border-zinc-800 rounded-full text-xs font-semibold flex items-center space-x-1.5 text-ios-gray">
+                    <span class="w-2 h-2 rounded-full bg-zinc-600" id="session-dot"></span>
+                    <span id="header-timer-text" class="font-mono font-bold">00:00</span>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-          <label for="inputHeight">Estatura (cm):</label>
-          <input type="number" id="inputHeight" placeholder="Ej: 175" required>
-        </div>
-        <div class="form-group">
-          <label for="inputWeightInit">Peso Inicial (kg):</label>
-          <input type="number" step="0.1" id="inputWeightInit" placeholder="Ej: 78.5" required>
-        </div>
-        <div class="form-group">
-          <label for="inputWeightTarget">Peso Meta (kg):</label>
-          <input type="number" step="0.1" id="inputWeightTarget" placeholder="Ej: 74.0" required>
-        </div>
-        <button type="submit" class="btn-primary">Guardar y Comenzar</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- APLICACIÓN PRINCIPAL -->
-  <div id="appContainer">
-    <header>
-      <div>
-        <div class="user-greeting" id="displayGreeting">¡Hola! 👋</div>
-        <div class="user-sub" id="displaySub">Mancuernas 4kg & 7.5kg (23:00 hs)</div>
-      </div>
-      <button type="button" class="btn-edit-profile" onclick="openProfileModal()">Editar Perfil</button>
     </header>
 
-    <!-- BANNER DE RECORDATORIO SI HAY ENTRENAMIENTO HOY -->
-    <div id="todayAlert" class="alert-banner hidden">
-      <div>
-        <div class="alert-text" id="todayAlertText">⏰ ¡Hoy toca entrenar!</div>
-        <div style="font-size:0.75rem; color:var(--text-muted);" id="todayAlertSub">Sesión A | 23:00 hs</div>
-      </div>
-      <div class="alert-actions">
-        <button type="button" class="btn-xs btn-warning" onclick="snoozeTodaySession()">Posponer 24h ⏱️</button>
-      </div>
-    </div>
-
-    <!-- ESTADÍSTICAS RÁPIDAS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-val" id="statCurrentWeight">-- kg</div>
-        <div class="stat-lbl">Actual</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="statBMI">--</div>
-        <div class="stat-lbl">IMC</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="statGoal">-- kg</div>
-        <div class="stat-lbl">Meta</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="statWorkoutsCount">0</div>
-        <div class="stat-lbl">Sesiones</div>
-      </div>
-    </div>
-
-    <!-- PESTAÑAS DE NAVEGACIÓN -->
-    <div class="tab-buttons">
-      <button type="button" class="tab-btn active" onclick="switchTab('tabA', event)">Sesión A</button>
-      <button type="button" class="tab-btn" onclick="switchTab('tabB', event)">Sesión B</button>
-      <button type="button" class="tab-btn" onclick="switchTab('tabCalendar', event)">Calendario</button>
-      <button type="button" class="tab-btn" onclick="switchTab('tabWeight', event)">Mi Peso</button>
-      <button type="button" class="tab-btn" onclick="switchTab('tabHistory', event)">Historial</button>
-    </div>
-
-    <!-- SESIÓN A -->
-    <div id="tabA" class="tab-content active">
-      <div class="exercise-card" data-ex="Sentadilla Goblet (7.5 kg)">
-        <div class="ex-header">
-          <div class="ex-title">1. Sentadilla Goblet</div>
-          <div class="ex-badge">7.5 kg</div>
-        </div>
-        <div class="ex-details">3 series × 10-12 reps | Descanso 90s. Sostén la mancuerna en el pecho y baja profundo.</div>
-        <div class="sets-row">
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 1</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 2</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 3</button>
-        </div>
-      </div>
-
-      <div class="exercise-card" data-ex="Press de Pecho en Suelo (7.5 kg)">
-        <div class="ex-header">
-          <div class="ex-title">2. Press de Pecho en Suelo</div>
-          <div class="ex-badge">7.5 kg</div>
-        </div>
-        <div class="ex-details">3 series × 10-12 reps | Descanso 75s. Acostado boca arriba, empuja ambas mancuernas hacia arriba.</div>
-        <div class="sets-row">
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 1</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 2</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 3</button>
-        </div>
-      </div>
-
-      <div class="exercise-card" data-ex="Peso Muerto Rumano (7.5 kg x2)">
-        <div class="ex-header">
-          <div class="ex-title">3. Peso Muerto Rumano</div>
-          <div class="ex-badge">7.5 kg (x2)</div>
-        </div>
-        <div class="ex-details">3 series × 10-12 reps | Descanso 90s. Lleva la cadera hacia atrás sintiendo la tensión en isquiotibiales.</div>
-        <div class="sets-row">
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 1</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 2</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 3</button>
-        </div>
-      </div>
-
-      <button type="button" class="btn-primary btn-success" onclick="finishWorkout('Sesión A (Piernas & Empuje)', 'tabA')">
-        ✓ Finalizar y Registrar Sesión A
-      </button>
-    </div>
-
-    <!-- SESIÓN B -->
-    <div id="tabB" class="tab-content">
-      <div class="exercise-card" data-ex="Remo Unilateral (7.5 kg)">
-        <div class="ex-header">
-          <div class="ex-title">1. Remo Unilateral</div>
-          <div class="ex-badge">7.5 kg</div>
-        </div>
-        <div class="ex-details">3 series × 10-12 reps por lado | Descanso 75s. Apóyate en una silla y tracciona el codo hacia la cadera.</div>
-        <div class="sets-row">
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 1</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 2</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 3</button>
-        </div>
-      </div>
-
-      <div class="exercise-card" data-ex="Press Militar Hombros (4 kg x2)">
-        <div class="ex-header">
-          <div class="ex-title">2. Press Militar Hombros</div>
-          <div class="ex-badge">4 kg (x2)</div>
-        </div>
-        <div class="ex-details">3 series × 10-12 reps | Descanso 75s. Mantén los codos al frente y empuja sobre la cabeza.</div>
-        <div class="sets-row">
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 1</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 2</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 3</button>
-        </div>
-      </div>
-
-      <div class="exercise-card" data-ex="Zancadas Traseras (4kg/7.5kg)">
-        <div class="ex-header">
-          <div class="ex-title">3. Zancadas Traseras</div>
-          <div class="ex-badge">4 kg o 7.5 kg</div>
-        </div>
-        <div class="ex-details">3 series × 10 reps por pierna | Descanso 90s. Paso amplio hacia atrás manteniendo el torso erguido.</div>
-        <div class="sets-row">
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 1</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 2</button>
-          <button type="button" class="set-box" onclick="toggleSet(this)">Serie 3</button>
-        </div>
-      </div>
-
-      <button type="button" class="btn-primary btn-success" onclick="finishWorkout('Sesión B (Espalda & Hombros)', 'tabB')">
-        ✓ Finalizar y Registrar Sesión B
-      </button>
-    </div>
-
-    <!-- CALENDARIO DE ENTRENAMIENTOS Y PROGRAMACIÓN -->
-    <div id="tabCalendar" class="tab-content">
-      <div class="section-card">
-        <div class="section-title">
-          <span>📅 Calendario (23:00 hs)</span>
-          <button type="button" class="btn-xs btn-secondary" onclick="generateSchedule()">Reiniciar Días</button>
-        </div>
-        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:14px;">3 días a la semana alternando entre Sesión A y B a las 23:00 hs.</p>
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 max-w-md w-full mx-auto px-4 pt-4 pb-36">
         
-        <div id="calendarList">
-          <!-- Lista dinámica de sesiones -->
-        </div>
+        <!-- ========================================== -->
+        <!-- TAB 1: ENTRENAR (WORKOUT TRACKER)          -->
+        <!-- ========================================== -->
+        <section id="tab-workout" class="space-y-5">
+            
+            <!-- Session Segmented Selector (A/B) -->
+            <div class="p-1 bg-zinc-900/90 border border-zinc-800 rounded-2xl flex relative shadow-inner">
+                <button id="btn-session-a" onclick="selectSession('A')" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 bg-ios-blue text-white shadow-lg">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                    <span>Sesión A: Piernas & Pecho</span>
+                </button>
+                <button id="btn-session-b" onclick="selectSession('B')" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 text-ios-gray hover:text-white">
+                    <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                    <span>Sesión B: Espalda & Hombros</span>
+                </button>
+            </div>
 
-        <button type="button" class="btn-primary btn-secondary" style="margin-top:14px;" onclick="downloadICS()">
-          📲 Exportar Recordatorios 23:00 hs al iPhone (.ics)
-        </button>
-      </div>
+            <!-- Active Session Control Banner -->
+            <div id="session-control-card" class="bg-gradient-to-br from-zinc-900 via-ios-card to-zinc-900 rounded-2xl p-4 border border-zinc-800/80 shadow-md space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-ios-blue" id="session-tag">RUTINA MANCUERNAS</span>
+                        <h2 class="text-base font-black text-white mt-0.5" id="session-title">Sesión A: Piernas y Empuje</h2>
+                        <p class="text-xs text-ios-gray mt-0.5" id="session-desc">Sentadilla, Press Pecho y Peso Muerto (3 series c/u)</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2.5 py-1 bg-ios-blue/10 border border-ios-blue/30 rounded-full text-[11px] font-bold text-ios-blue" id="completed-sets-counter">0/9 Series</span>
+                    </div>
+                </div>
+
+                <!-- Session Start/Pause Controller -->
+                <div class="pt-2 border-t border-zinc-800/80 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-ios-green"></i>
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-ios-gray block">Tiempo Total Sesión</span>
+                            <span class="text-lg font-mono font-black text-white" id="session-total-timer-display">00:00:00</span>
+                        </div>
+                    </div>
+
+                    <button id="btn-start-session" onclick="toggleStartSession()" class="px-4 py-2.5 bg-ios-green hover:bg-emerald-400 text-black font-extrabold text-xs rounded-xl shadow-lg active:scale-95 transition-all flex items-center space-x-1.5">
+                        <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                        <span id="btn-start-session-text">INICIAR SESIÓN</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step-by-step Exercise List -->
+            <div id="exercises-list" class="space-y-4">
+                <!-- Dynamic exercise cards rendered here -->
+            </div>
+
+            <!-- Session Notes Card -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80">
+                <label class="text-xs font-semibold text-ios-gray uppercase tracking-wider mb-2 flex items-center">
+                    <i data-lucide="notebook" class="w-3.5 h-3.5 mr-1.5 text-ios-blue"></i>
+                    Notas de la sesión
+                </label>
+                <textarea id="workout-notes" rows="2" placeholder="¿Cómo te sentiste hoy? (Ej: Buenas sensaciones con 7.5kg...)" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-ios-blue transition-all resize-none"></textarea>
+            </div>
+
+            <!-- Complete Session Button -->
+            <button onclick="finishWorkout()" class="w-full py-4 bg-gradient-to-r from-ios-green to-emerald-500 hover:opacity-95 text-black font-extrabold text-base rounded-2xl shadow-lg shadow-ios-green/20 flex items-center justify-center space-x-2 active:scale-[0.98] transition-all">
+                <i data-lucide="check-circle-2" class="w-5 h-5 stroke-[2.5]"></i>
+                <span>FINALIZAR Y GUARDAR ENTRENAMIENTO</span>
+            </button>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- TAB 2: PROGRESO Y PESO (PROGRESS & BMI)   -->
+        <!-- ========================================== -->
+        <section id="tab-progress" class="space-y-5 hidden">
+            
+            <!-- User Profile & BMI Banner -->
+            <div class="bg-gradient-to-br from-zinc-900 via-ios-card to-zinc-900 rounded-2xl p-4 border border-zinc-800 shadow-md space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-ios-blue/15 border border-ios-blue/30 flex items-center justify-center text-ios-blue">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-white" id="banner-user-name">Tu Perfil</h3>
+                            <p class="text-xs text-ios-gray" id="banner-user-details">Estatura: -- cm • Peso Inicial: -- kg</p>
+                        </div>
+                    </div>
+                    <button onclick="openProfileModal()" class="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-semibold text-ios-blue border border-zinc-700/60 active:scale-95 transition-all flex items-center space-x-1">
+                        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                        <span>Editar</span>
+                    </button>
+                </div>
+
+                <!-- KPI Grid Metrics -->
+                <div class="grid grid-cols-3 gap-2 pt-1 border-t border-zinc-800/80">
+                    <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50 text-center">
+                        <span class="text-[9px] uppercase font-bold text-ios-gray block">Peso Actual</span>
+                        <span class="text-base font-black text-white mt-0.5 block" id="kpi-current-weight">-- kg</span>
+                        <span class="text-[9px] text-ios-gray font-medium" id="kpi-weight-change">-- kg</span>
+                    </div>
+
+                    <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50 text-center">
+                        <span class="text-[9px] uppercase font-bold text-ios-gray block">Meta</span>
+                        <span class="text-base font-black text-ios-blue mt-0.5 block" id="kpi-target-weight">-- kg</span>
+                        <span class="text-[9px] text-ios-blue font-medium" id="kpi-target-progress">--%</span>
+                    </div>
+
+                    <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50 text-center">
+                        <span class="text-[9px] uppercase font-bold text-ios-gray block">IMC</span>
+                        <span class="text-base font-black text-ios-green mt-0.5 block" id="kpi-bmi-val">--</span>
+                        <span class="text-[9px] font-semibold block text-ios-green" id="kpi-bmi-status">Normal</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Weight Entry Card -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-white flex items-center">
+                        <i data-lucide="scale" class="w-4 h-4 mr-1.5 text-ios-green"></i>
+                        Registrar Pesaje Semanal
+                    </h3>
+                    <span class="text-[10px] font-semibold text-ios-green bg-ios-green/10 px-2 py-0.5 rounded-full border border-ios-green/20">Progreso</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-ios-gray block mb-1 uppercase font-bold">Fecha</label>
+                        <input type="date" id="weight-input-date" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-green">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-ios-gray block mb-1 uppercase font-bold">Peso (kg)</label>
+                        <input type="number" step="0.1" id="weight-input-val" placeholder="Ej: 75.2" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-ios-green">
+                    </div>
+                </div>
+
+                <div>
+                    <input type="text" id="weight-input-notes" placeholder="Nota opcional (Ej: En ayunas, lunes mañana...)" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-ios-green">
+                </div>
+
+                <button onclick="addWeightLog()" class="w-full py-2.5 bg-ios-green hover:bg-emerald-400 text-black font-extrabold text-xs rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center space-x-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4 stroke-[2.5]"></i>
+                    <span>GUARDAR PESO</span>
+                </button>
+            </div>
+
+            <!-- Weight Evolution Canvas Chart -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center">
+                            <i data-lucide="trending-down" class="w-4 h-4 mr-1.5 text-ios-blue"></i>
+                            Evolución de Tu Peso
+                        </h3>
+                        <p class="text-[11px] text-ios-gray">Línea naranja representa tu Peso Meta</p>
+                    </div>
+                </div>
+
+                <div class="relative h-48 w-full bg-zinc-950/80 rounded-xl p-2 border border-zinc-800/60 flex items-center justify-center">
+                    <canvas id="weightChartCanvas" class="w-full h-full"></canvas>
+                    <div id="weight-chart-empty-msg" class="absolute text-center text-xs text-ios-gray p-4">
+                        Registra al menos 2 pesajes para ver tu gráfica de evolución.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weight History List -->
+            <div class="space-y-2">
+                <h3 class="text-xs font-bold text-ios-gray uppercase tracking-wider px-1">Historial de Pesajes</h3>
+                <div id="weight-history-list" class="space-y-2">
+                    <!-- Dynamic weight items -->
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- TAB 3: CALENDARIO & HORARIO 23:00 HS      -->
+        <!-- ========================================== -->
+        <section id="tab-calendar" class="space-y-5 hidden">
+            <!-- Schedule Card -->
+            <div class="bg-gradient-to-br from-zinc-900 via-ios-card to-zinc-900 rounded-2xl p-4 border border-zinc-800 shadow-md space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-ios-orange/15 border border-ios-orange/30 flex items-center justify-center text-ios-orange">
+                            <i data-lucide="clock" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-white">Horario Fijo de Entrenamiento</h3>
+                            <p class="text-xs text-ios-orange font-semibold">23:00 HS • Lunes, Miércoles y Viernes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-xs text-ios-gray leading-relaxed pt-1">
+                    Diseñado para entrenar de noche con mancuernas de 4kg y 7.5kg. Puedes sincronizar la rutina directamente con tu app de Calendario de iPhone.
+                </p>
+
+                <div class="grid grid-cols-3 gap-2 pt-2">
+                    <div class="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 text-center">
+                        <span class="text-[10px] text-ios-gray uppercase font-bold block">Lunes</span>
+                        <span class="text-xs font-bold text-ios-blue mt-0.5 block">23:00 HS</span>
+                        <span class="text-[9px] text-ios-gray">Sesión A</span>
+                    </div>
+                    <div class="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 text-center">
+                        <span class="text-[10px] text-ios-gray uppercase font-bold block">Miércoles</span>
+                        <span class="text-xs font-bold text-ios-blue mt-0.5 block">23:00 HS</span>
+                        <span class="text-[9px] text-ios-gray">Sesión B</span>
+                    </div>
+                    <div class="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 text-center">
+                        <span class="text-[10px] text-ios-gray uppercase font-bold block">Viernes</span>
+                        <span class="text-xs font-bold text-ios-blue mt-0.5 block">23:00 HS</span>
+                        <span class="text-[9px] text-ios-gray">Sesión A / B</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 space-y-2">
+                    <button onclick="downloadICSFile()" class="w-full py-3 bg-ios-blue hover:bg-blue-600 text-white font-extrabold text-xs rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2">
+                        <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                        <span>Exportar Calendario (.ICS) para iPhone</span>
+                    </button>
+                    
+                    <button onclick="snoozeReminder24h()" class="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-ios-orange font-bold text-xs rounded-xl border border-zinc-700 active:scale-95 transition-all flex items-center justify-center space-x-1.5">
+                        <i data-lucide="bell-off" class="w-4 h-4"></i>
+                        <span>Postergar Entrenamiento (Posponer 24h)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- iPhone Notifications API Integration -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center">
+                            <i data-lucide="bell" class="w-4 h-4 mr-1.5 text-ios-orange"></i>
+                            Notificaciones Locales de iPhone
+                        </h3>
+                        <p class="text-[11px] text-ios-gray">Avisos para pesarse y entrenar a las 23:00 HS</p>
+                    </div>
+                    <span id="notif-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-ios-gray border border-zinc-700">
+                        Inactivo
+                    </span>
+                </div>
+
+                <button onclick="requestNotificationPermission()" id="btn-request-notif" class="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-ios-orange font-bold text-xs rounded-xl border border-zinc-700 active:scale-95 transition-all flex items-center justify-center space-x-1.5">
+                    <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                    <span>Activar Recordatorios en mi Navegador</span>
+                </button>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- TAB 4: HISTORIAL & RESUMEN DE TIEMPOS     -->
+        <!-- ========================================== -->
+        <section id="tab-history" class="space-y-5 hidden">
+            
+            <!-- Overall Stats Grid -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-ios-card p-3.5 rounded-2xl border border-zinc-800/80 text-center">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-ios-gray block">Sesiones</span>
+                    <span id="stat-total-workouts" class="text-xl font-black text-white mt-1 block">0</span>
+                    <span class="text-[9px] text-ios-green font-semibold mt-0.5 block">Completadas</span>
+                </div>
+                <div class="bg-ios-card p-3.5 rounded-2xl border border-zinc-800/80 text-center">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-ios-gray block">Días Activo</span>
+                    <span id="stat-streak" class="text-xl font-black text-ios-orange mt-1 block">0</span>
+                    <span class="text-[9px] text-ios-gray font-semibold mt-0.5 block">Registrados</span>
+                </div>
+                <div class="bg-ios-card p-3.5 rounded-2xl border border-zinc-800/80 text-center">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-ios-gray block">Volumen</span>
+                    <span id="stat-total-volume" class="text-xl font-black text-ios-blue mt-1 block">0 kg</span>
+                    <span class="text-[9px] text-ios-gray font-semibold mt-0.5 block">Acumulado</span>
+                </div>
+            </div>
+
+            <!-- Workout Log Feed with Duration Breakdown -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-xs font-bold text-ios-gray uppercase tracking-wider">Historial con Tiempos</h3>
+                    <span class="text-xs text-ios-blue font-semibold" id="logs-count">0 registros</span>
+                </div>
+
+                <div id="workout-history-list" class="space-y-3">
+                    <!-- Dynamic workout logs injected here -->
+                </div>
+            </div>
+
+            <!-- Backup & Restore -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3">
+                <h3 class="text-sm font-bold text-white flex items-center">
+                    <i data-lucide="sliders" class="w-4 h-4 mr-1.5 text-ios-gray"></i>
+                    Respaldo y Datos
+                </h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportData()" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-semibold text-white flex items-center justify-center space-x-1.5 border border-zinc-700/50 active:scale-95 transition-all">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-ios-blue"></i>
+                        <span>Exportar JSON</span>
+                    </button>
+                    <button onclick="triggerImportJSON()" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-semibold text-white flex items-center justify-center space-x-1.5 border border-zinc-700/50 active:scale-95 transition-all">
+                        <i data-lucide="upload" class="w-3.5 h-3.5 text-ios-green"></i>
+                        <span>Importar JSON</span>
+                    </button>
+                    <input type="file" id="import-file-input" class="hidden" accept=".json" onchange="importData(event)">
+                </div>
+
+                <button onclick="confirmResetData()" class="w-full py-2.5 bg-ios-red/10 hover:bg-ios-red/20 border border-ios-red/30 rounded-xl text-xs font-semibold text-ios-red flex items-center justify-center space-x-1.5 active:scale-95 transition-all">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span>Borrar todos los datos</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- ========================================== -->
+    <!-- 90-SECOND REST TIMER MODAL / DRAWER       -->
+    <!-- ========================================== -->
+    <div id="rest-timer-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-ios-card border border-zinc-700 rounded-3xl p-6 max-w-xs w-full text-center space-y-5 shadow-2xl transform scale-95 transition-transform duration-300" id="rest-timer-card">
+            
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-ios-green flex items-center">
+                    <i data-lucide="timer" class="w-4 h-4 mr-1.5"></i>
+                    Descanso entre series
+                </span>
+                <span class="text-[10px] text-ios-gray" id="rest-modal-exercise-name">Sentadilla Goblet</span>
+            </div>
+
+            <!-- Circular Progress Counter -->
+            <div class="relative w-36 h-36 mx-auto flex items-center justify-center">
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="8" class="text-zinc-800" fill="transparent" />
+                    <circle id="rest-progress-circle" cx="50" cy="50" r="42" stroke="currentColor" stroke-width="8" class="text-ios-green transition-all duration-1000" fill="transparent" stroke-dasharray="263.89" stroke-dashoffset="0" stroke-linecap="round" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span id="rest-seconds-display" class="text-3xl font-black font-mono text-white">90s</span>
+                    <span class="text-[10px] text-ios-gray font-semibold uppercase">Recuperación</span>
+                </div>
+            </div>
+
+            <!-- Rest Timer Controls -->
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <button onclick="addRestTime(15)" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-ios-blue rounded-xl border border-zinc-700 active:scale-95 transition-all">
+                    +15 Segundos
+                </button>
+                <button onclick="skipRestTimer()" class="py-2.5 bg-ios-green text-black font-extrabold text-xs rounded-xl shadow-md active:scale-95 transition-all">
+                    Saltar Descanso
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- EVOLUCIÓN Y REGISTRO DE PESO -->
-    <div id="tabWeight" class="tab-content">
-      <div class="section-card">
-        <div class="section-title">Evolución Semanal</div>
-        <div class="chart-container">
-          <canvas id="weightChart"></canvas>
-        </div>
-      </div>
 
-      <div class="section-card">
-        <div class="section-title">Registrar Nuevo Pesaje</div>
-        <form id="weightLogForm" style="display: flex; gap: 10px;">
-          <input type="number" step="0.1" id="newWeightInput" placeholder="Peso en kg (Ej: 77.2)" required style="flex:1; padding: 12px; background:#0F172A; border:1px solid var(--border-color); border-radius:10px; color:#fff;">
-          <button type="submit" class="btn-primary" style="width: auto; margin-top:0; padding: 12px 18px;">Añadir</button>
-        </form>
-      </div>
+    <!-- ========================================== -->
+    <!-- BOTTOM TAB BAR (iOS Native Style)          -->
+    <!-- ========================================== -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 glass-nav border-t border-zinc-800/80 px-4 pt-2 pb-5">
+        <div class="max-w-md mx-auto flex justify-around items-center">
+            
+            <button onclick="switchTab('workout')" id="tab-btn-workout" class="flex flex-col items-center space-y-1 text-ios-green transition-all">
+                <i data-lucide="dumbbell" class="w-5 h-5 stroke-[2.2]"></i>
+                <span class="text-[10px] font-semibold tracking-tight">Entrenar</span>
+            </button>
 
-      <div class="section-card">
-        <div class="section-title">Historial de Pesajes</div>
-        <div id="weightLogHistory">
-          <!-- Se llena dinámicamente -->
+            <button onclick="switchTab('progress')" id="tab-btn-progress" class="flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all">
+                <i data-lucide="line-chart" class="w-5 h-5 stroke-[2]"></i>
+                <span class="text-[10px] font-semibold tracking-tight">Progreso</span>
+            </button>
+
+            <button onclick="switchTab('calendar')" id="tab-btn-calendar" class="flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all">
+                <i data-lucide="calendar-clock" class="w-5 h-5 stroke-[2]"></i>
+                <span class="text-[10px] font-semibold tracking-tight">Horario</span>
+            </button>
+
+            <button onclick="switchTab('history')" id="tab-btn-history" class="flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all">
+                <i data-lucide="history" class="w-5 h-5 stroke-[2]"></i>
+                <span class="text-[10px] font-semibold tracking-tight">Historial</span>
+            </button>
+
         </div>
-      </div>
+    </nav>
+
+
+    <!-- ========================================== -->
+    <!-- MODALS & TOAST NOTIFICATIONS              -->
+    <!-- ========================================== -->
+
+    <!-- Custom Toast -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 glass-nav border border-zinc-700 text-white px-4 py-2.5 rounded-full text-xs font-semibold shadow-2xl flex items-center space-x-2 transition-all duration-300 opacity-0 -translate-y-5 pointer-events-none">
+        <i data-lucide="info" class="w-4 h-4 text-ios-green" id="toast-icon"></i>
+        <span id="toast-message">Notificación</span>
     </div>
 
-    <!-- HISTORIAL DE ENTRENAMIENTOS -->
-    <div id="tabHistory" class="tab-content">
-      <div class="section-card">
-        <div class="section-title">Historial de Entrenamientos</div>
-        <div id="workoutLogContainer">
-          <!-- Se llena dinámicamente -->
+    <!-- Personal Profile Setup Modal -->
+    <div id="modal-profile" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-ios-card border border-zinc-700 rounded-3xl p-5 max-w-xs w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <h3 class="text-base font-bold text-white flex items-center">
+                    <i data-lucide="user-check" class="w-4 h-4 mr-2 text-ios-blue"></i>
+                    Tu Perfil Personal
+                </h3>
+                <button onclick="closeProfileModal()" class="text-ios-gray hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-ios-gray block mb-1">Tu Nombre:</label>
+                    <input type="text" id="prof-name-input" placeholder="Ej: Juan" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-blue">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs text-ios-gray block mb-1">Estatura (cm):</label>
+                        <input type="number" id="prof-height-input" placeholder="Ej: 175" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-blue">
+                    </div>
+                    <div>
+                        <label class="text-xs text-ios-gray block mb-1">Peso Inicial (kg):</label>
+                        <input type="number" step="0.1" id="prof-initweight-input" placeholder="Ej: 80" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-blue">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-ios-gray block mb-1">Peso Meta (kg):</label>
+                    <input type="number" step="0.1" id="prof-targetweight-input" placeholder="Ej: 72" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-blue">
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeProfileModal()" class="flex-1 py-2.5 bg-zinc-800 text-xs font-bold text-ios-gray rounded-xl">Cancelar</button>
+                <button onclick="saveProfile()" class="flex-1 py-2.5 bg-ios-blue text-xs font-bold text-white rounded-xl shadow-md">Guardar Perfil</button>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 
-  <div id="toast" class="toast hidden">¡Entrenamiento registrado! 🔥</div>
+    <!-- Celebration Modal with Time Summary -->
+    <div id="modal-celebration" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-ios-card border border-zinc-700 rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-celebration-card">
+            <div class="w-16 h-16 bg-ios-green/20 border border-ios-green/40 rounded-full flex items-center justify-center mx-auto text-ios-green">
+                <i data-lucide="trophy" class="w-8 h-8 stroke-[2.5]"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-black text-white">¡Gran Trabajo!</h3>
+                <p class="text-xs text-ios-gray mt-1">Has completado tu sesión de entrenamiento con éxito.</p>
+            </div>
+            <div class="bg-zinc-900 p-3 rounded-2xl border border-zinc-800 text-left space-y-1.5 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-ios-gray">Sesión:</span>
+                    <span class="font-bold text-white" id="modal-summary-session">Sesión A</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ios-gray">Tiempo Total:</span>
+                    <span class="font-bold text-ios-orange" id="modal-summary-duration">00m 00s</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ios-gray">Volumen Levantado:</span>
+                    <span class="font-bold text-ios-green" id="modal-summary-volume">0 kg</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ios-gray">Series Completadas:</span>
+                    <span class="font-bold text-ios-blue" id="modal-summary-sets">0/9</span>
+                </div>
+            </div>
+            <button onclick="closeCelebrationModal()" class="w-full py-3 bg-ios-green text-black font-extrabold rounded-xl shadow-lg active:scale-95 transition-all">
+                VER EN HISTORIAL
+            </button>
+        </div>
+    </div>
 
-  <script>
-    let profile = null;
-    let weightHistory = [];
-    let workoutHistory = [];
-    let schedule = [];
-    let myChart = null;
+    <!-- Confirm Reset Modal -->
+    <div id="modal-reset" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-ios-card border border-zinc-700 rounded-3xl p-5 max-w-xs w-full space-y-4 shadow-2xl text-center">
+            <div class="w-12 h-12 bg-ios-red/20 text-ios-red rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-white">¿Reiniciar todos los datos?</h3>
+                <p class="text-xs text-ios-gray mt-1">Se borrarán tus pesajes, perfil e historial de entrenamientos. Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeResetModal()" class="flex-1 py-2.5 bg-zinc-800 text-xs font-bold text-ios-gray rounded-xl">Cancelar</button>
+                <button onclick="executeResetData()" class="flex-1 py-2.5 bg-ios-red text-xs font-bold text-white rounded-xl">Sí, Borrar Todo</button>
+            </div>
+        </div>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', () => {
-      loadProfile();
-      loadWeightHistory();
-      loadWorkoutHistory();
-      loadSchedule();
-      checkTodayAlert();
-    });
 
-    function loadProfile() {
-      try {
-        const savedProfile = localStorage.getItem('rutina_profile');
-        if (savedProfile) {
-          profile = JSON.parse(savedProfile);
-          renderProfileInfo();
-          document.getElementById('profileModal').classList.add('hidden');
-        } else {
-          openProfileModal();
-        }
-      } catch (e) {
-        console.error(e);
-        openProfileModal();
-      }
-    }
-
-    document.getElementById('profileForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      try {
-        const name = document.getElementById('inputName').value.trim();
-        const height = parseFloat(document.getElementById('inputHeight').value) || 0;
-        const weightInit = parseFloat(document.getElementById('inputWeightInit').value) || 0;
-        const weightTarget = parseFloat(document.getElementById('inputWeightTarget').value) || 0;
-
-        profile = { name, height, weightInit, weightTarget };
-        localStorage.setItem('rutina_profile', JSON.stringify(profile));
-
-        if (weightHistory.length === 0 && weightInit > 0) {
-          weightHistory.push({
-            id: Date.now(),
-            date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
-            weight: weightInit
-          });
-          localStorage.setItem('rutina_weights', JSON.stringify(weightHistory));
-        }
-
-        renderProfileInfo();
-        renderWeightHistory();
-        renderChart();
-      } catch (err) {
-        console.error(err);
-      } finally {
-        closeProfileModal();
-      }
-    });
-
-    function renderProfileInfo() {
-      if (!profile) return;
-
-      document.getElementById('displayGreeting').innerText = `¡Hola, ${profile.name || 'Atleta'}! 👋`;
-      document.getElementById('statGoal').innerText = `${profile.weightTarget || '--'} kg`;
-
-      const currentWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].weight : profile.weightInit;
-      document.getElementById('statCurrentWeight').innerText = `${currentWeight || '--'} kg`;
-
-      if (profile.height > 0 && currentWeight > 0) {
-        const heightMeters = profile.height / 100;
-        const bmi = (currentWeight / (heightMeters * heightMeters)).toFixed(1);
-        document.getElementById('statBMI').innerText = bmi;
-      }
-
-      document.getElementById('statWorkoutsCount').innerText = workoutHistory.length;
-    }
-
-    function openProfileModal() {
-      if (profile) {
-        document.getElementById('inputName').value = profile.name || '';
-        document.getElementById('inputHeight').value = profile.height || '';
-        document.getElementById('inputWeightInit').value = profile.weightInit || '';
-        document.getElementById('inputWeightTarget').value = profile.weightTarget || '';
-      }
-      document.getElementById('profileModal').classList.remove('hidden');
-    }
-
-    function closeProfileModal() {
-      document.getElementById('profileModal').classList.add('hidden');
-    }
-
-    function switchTab(tabId, event) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-      if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
-      }
-      
-      const targetTab = document.getElementById(tabId);
-      if (targetTab) {
-        targetTab.classList.add('active');
-      }
-
-      if (tabId === 'tabWeight') {
-        setTimeout(renderChart, 100);
-      }
-    }
-
-    function toggleSet(button) {
-      button.classList.toggle('completed');
-    }
-
-    function finishWorkout(sessionName, tabId) {
-      try {
-        const container = document.getElementById(tabId);
-        if (!container) return;
-        const cards = container.querySelectorAll('.exercise-card');
-        let details = [];
-
-        cards.forEach(card => {
-          const exName = card.getAttribute('data-ex') || 'Ejercicio';
-          const completedSets = card.querySelectorAll('.set-box.completed').length;
-          const totalSets = card.querySelectorAll('.set-box').length;
-          details.push(`${exName}: ${completedSets}/${totalSets} series`);
-        });
-
-        const newEntry = {
-          id: Date.now(),
-          session: sessionName,
-          date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
-          details: details
+    <!-- ========================================== -->
+    <!-- APPLICATION JAVASCRIPT CORE LOGIC          -->
+    <!-- ========================================== -->
+    <script>
+        // Workout Routines Definition (Tailored for 2x 7.5kg and 2x 4kg dumbbells)
+        const WORKOUT_DEFINITIONS = {
+            'A': {
+                title: 'Sesión A: Piernas y Empuje',
+                desc: 'Sentadilla Goblet (7.5kg), Press Pecho (7.5kg) y Peso Muerto (7.5kg)',
+                exercises: [
+                    { id: 'sentadilla', name: 'Sentadilla Goblet', sets: 3, targetReps: '10-12', defaultWeight: 7.5, tip: 'Sostén la mancuerna de 7.5kg pegada al pecho verticalmente.' },
+                    { id: 'press_pecho', name: 'Press de Pecho en Suelo', sets: 3, targetReps: '10-12', defaultWeight: 7.5, tip: 'Baja controlado hasta rozar los tríceps con el suelo.' },
+                    { id: 'peso_muerto', name: 'Peso Muerto Rumano', sets: 3, targetReps: '10-12', defaultWeight: 7.5, tip: 'Lleva la cadera hacia atrás sintiendo tensión en isquios.' }
+                ]
+            },
+            'B': {
+                title: 'Sesión B: Espalda y Hombros',
+                desc: 'Remo Unilateral (7.5kg), Press Militar (4kg) y Zancadas (4/7.5kg)',
+                exercises: [
+                    { id: 'remo', name: 'Remo Unilateral con Mancuerna', sets: 3, targetReps: '10-12', defaultWeight: 7.5, tip: 'Tracciona el codo hacia atrás dirigiendo la pesa a tu cadera.' },
+                    { id: 'press_militar', name: 'Press Militar de Hombros', sets: 3, targetReps: '10-12', defaultWeight: 4.0, tip: 'Usa las de 4kg para cuidar la alineación de tus hombros.' },
+                    { id: 'zancadas', name: 'Zancadas Traseras con Mancuernas', sets: 3, targetReps: '10/pierna', defaultWeight: 4.0, tip: 'Empieza con 4kg para afianzar el equilibrio.' }
+                ]
+            }
         };
 
-        workoutHistory.unshift(newEntry);
-        localStorage.setItem('rutina_workouts', JSON.stringify(workoutHistory));
-
-        container.querySelectorAll('.set-box').forEach(box => box.classList.remove('completed'));
-
-        // Marcar la sesión de hoy como completada en el calendario
-        const todayStr = new Date().toDateString();
-        let match = schedule.find(s => new Date(s.timestamp).toDateString() === todayStr && !s.done);
-        if (match) {
-          match.done = true;
-          localStorage.setItem('rutina_schedule', JSON.stringify(schedule));
-          renderSchedule();
-          checkTodayAlert();
-        }
-
-        renderWorkoutHistory();
-        renderProfileInfo();
-        showToast("¡Entrenamiento registrado! 🔥");
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    function loadWorkoutHistory() {
-      const saved = localStorage.getItem('rutina_workouts');
-      if (saved) {
-        try {
-          workoutHistory = JSON.parse(saved);
-        } catch (e) {
-          workoutHistory = [];
-        }
-      }
-      renderWorkoutHistory();
-    }
-
-    function renderWorkoutHistory() {
-      const container = document.getElementById('workoutLogContainer');
-      if (!container) return;
-      if (workoutHistory.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); font-size:0.85rem;">No has registrado entrenamientos aún.</div>';
-        return;
-      }
-
-      container.innerHTML = workoutHistory.map(item => `
-        <div class="history-card">
-          <div class="history-header">
-            <span class="history-title">${item.session}</span>
-            <span class="history-date">${item.date}</span>
-          </div>
-          <div class="history-body">
-            ${item.details.map(d => `• ${d}`).join('<br>')}
-          </div>
-          <button type="button" class="btn-delete" onclick="deleteWorkout(${item.id})">Eliminar registro</button>
-        </div>
-      `).join('');
-    }
-
-    function deleteWorkout(id) {
-      workoutHistory = workoutHistory.filter(w => w.id !== id);
-      localStorage.setItem('rutina_workouts', JSON.stringify(workoutHistory));
-      renderWorkoutHistory();
-      renderProfileInfo();
-    }
-
-    // LÓGICA DEL CALENDARIO & PROGRAMACIÓN (23:00 HS)
-    function loadSchedule() {
-      const savedSchedule = localStorage.getItem('rutina_schedule');
-      if (savedSchedule) {
-        try {
-          schedule = JSON.parse(savedSchedule);
-        } catch(e) {
-          generateSchedule();
-        }
-      } else {
-        generateSchedule();
-      }
-      renderSchedule();
-    }
-
-    function generateSchedule() {
-      schedule = [];
-      let current = new Date();
-      current.setHours(23, 0, 0, 0); // Configurado a las 23:00 hrs
-      
-      let sessionType = 'A';
-
-      for (let i = 0; i < 30; i++) {
-        let dayOfWeek = current.getDay(); // 1: Lun, 3: Mié, 5: Vie
-        if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) {
-          schedule.push({
-            id: Date.now() + i,
-            session: sessionType === 'A' ? 'Sesión A (Piernas & Empuje)' : 'Sesión B (Espalda & Hombros)',
-            sessionType: sessionType,
-            timestamp: current.getTime(),
-            done: false,
-            snoozed: false
-          });
-          sessionType = sessionType === 'A' ? 'B' : 'A';
-        }
-        current.setDate(current.getDate() + 1);
-      }
-
-      localStorage.setItem('rutina_schedule', JSON.stringify(schedule));
-      renderSchedule();
-      checkTodayAlert();
-    }
-
-    function renderSchedule() {
-      const container = document.getElementById('calendarList');
-      if (!container) return;
-
-      if (schedule.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); font-size:0.85rem;">No hay sesiones programadas.</div>';
-        return;
-      }
-
-      container.innerHTML = schedule.slice(0, 12).map(item => {
-        const dateObj = new Date(item.timestamp);
-        const dateStr = dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
-        
-        let statusBadge = item.done 
-          ? '<span class="cal-status status-done">Completado ✓</span>'
-          : item.snoozed 
-          ? '<span class="cal-status status-snoozed">Pospuesto 24h ⏱️</span>'
-          : '<span class="cal-status status-pending">Pendiente ⏰</span>';
-
-        return `
-          <div class="calendar-item">
-            <div class="cal-top">
-              <span class="cal-title">${item.session}</span>
-              ${statusBadge}
-            </div>
-            <div class="cal-date">📅 ${dateStr} a las 23:00 hs</div>
-            ${!item.done ? `
-              <div class="cal-actions">
-                <button type="button" class="btn-xs btn-warning" onclick="snoozeSession(${item.id})">Posponer 24h ⏱️</button>
-                <button type="button" class="btn-xs btn-success" onclick="toggleCalendarDone(${item.id})">Marcar Hecho ✓</button>
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join('');
-    }
-
-    function snoozeSession(id) {
-      let item = schedule.find(s => s.id === id);
-      if (item) {
-        item.timestamp += 24 * 60 * 60 * 1000; // Sumar 24 horas
-        item.snoozed = true;
-        localStorage.setItem('rutina_schedule', JSON.stringify(schedule));
-        renderSchedule();
-        checkTodayAlert();
-        showToast("Sesión pospuesta 24 horas ⏱️");
-      }
-    }
-
-    function snoozeTodaySession() {
-      const todayStr = new Date().toDateString();
-      let match = schedule.find(s => new Date(s.timestamp).toDateString() === todayStr && !s.done);
-      if (match) {
-        snoozeSession(match.id);
-      }
-    }
-
-    function toggleCalendarDone(id) {
-      let item = schedule.find(s => s.id === id);
-      if (item) {
-        item.done = !item.done;
-        localStorage.setItem('rutina_schedule', JSON.stringify(schedule));
-        renderSchedule();
-        checkTodayAlert();
-        showToast("Estado de sesión actualizado ✓");
-      }
-    }
-
-    function checkTodayAlert() {
-      const alertBanner = document.getElementById('todayAlert');
-      const todayStr = new Date().toDateString();
-      let match = schedule.find(s => new Date(s.timestamp).toDateString() === todayStr && !s.done);
-
-      if (match) {
-        document.getElementById('todayAlertText').innerText = `⏰ Recordatorio de Hoy: ${match.sessionType === 'A' ? 'Sesión A' : 'Sesión B'}`;
-        document.getElementById('todayAlertSub').innerText = `${match.session} | 23:00 hs`;
-        alertBanner.classList.remove('hidden');
-      } else {
-        alertBanner.classList.add('hidden');
-      }
-    }
-
-    // EXPORTAR ARCHIVO .ICS CON HORA 23:00
-    function downloadICS() {
-      let icsContent = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//Mi Rutina Pesas//ES",
-        "CALSCALE:GREGORIAN",
-        "METHOD:PUBLISH"
-      ];
-
-      schedule.slice(0, 15).forEach(s => {
-        if (!s.done) {
-          let startDate = new Date(s.timestamp);
-          let endDate = new Date(s.timestamp + 45 * 60 * 1000); // 45 min duración
-
-          let formatICSDate = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
-
-          icsContent.push("BEGIN:VEVENT");
-          icsContent.push(`SUMMARY:${s.session}`);
-          icsContent.push(`DESCRIPTION:Rutina de pesas con mancuernas (4kg y 7.5kg)`);
-          icsContent.push(`DTSTART:${formatICSDate(startDate)}`);
-          icsContent.push(`DTEND:${formatICSDate(endDate)}`);
-          icsContent.push("BEGIN:VALARM");
-          icsContent.push("ACTION:DISPLAY");
-          icsContent.push("DESCRIPTION:¡Hora de entrenar!");
-          icsContent.push("TRIGGER:-PT15M"); // Recordatorio a las 22:45 hs
-          icsContent.push("END:VALARM");
-          icsContent.push("END:VEVENT");
-        }
-      });
-
-      icsContent.push("END:VCALENDAR");
-
-      const blob = new Blob([icsContent.join("\r\n")], { type: "text/calendar;charset=utf-8" });
-      const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
-      link.setAttribute("download", "rutina_mancuernas_23hs.ics");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showToast("Archivo .ics listo a las 23:00 hs 📲");
-    }
-
-    // MANEJO DE PESO
-    function loadWeightHistory() {
-      const savedWeights = localStorage.getItem('rutina_weights');
-      if (savedWeights) {
-        try {
-          weightHistory = JSON.parse(savedWeights);
-        } catch (e) {
-          weightHistory = [];
-        }
-      }
-      renderWeightHistory();
-    }
-
-    document.getElementById('weightLogForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const weightVal = parseFloat(document.getElementById('newWeightInput').value);
-      if (isNaN(weightVal)) return;
-
-      const newEntry = {
-        id: Date.now(),
-        date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
-        weight: weightVal
-      };
-
-      weightHistory.push(newEntry);
-      localStorage.setItem('rutina_weights', JSON.stringify(weightHistory));
-
-      document.getElementById('newWeightInput').value = '';
-      renderWeightHistory();
-      renderProfileInfo();
-      renderChart();
-      showToast("Peso registrado con éxito ⚖️");
-    });
-
-    function renderWeightHistory() {
-      const container = document.getElementById('weightLogHistory');
-      if (!container) return;
-      if (weightHistory.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); font-size:0.85rem;">No hay registros de peso.</div>';
-        return;
-      }
-
-      container.innerHTML = weightHistory.slice().reverse().map(item => `
-        <div class="weight-log-item">
-          <span style="color: var(--text-muted);">${item.date}</span>
-          <span style="font-weight: 700; color: var(--accent-color);">${item.weight} kg</span>
-          <button type="button" class="btn-delete" style="margin:0" onclick="deleteWeight(${item.id || 0})">✕</button>
-        </div>
-      `).join('');
-    }
-
-    function deleteWeight(id) {
-      if (!id) return;
-      weightHistory = weightHistory.filter(w => w.id !== id);
-      localStorage.setItem('rutina_weights', JSON.stringify(weightHistory));
-      renderWeightHistory();
-      renderProfileInfo();
-      renderChart();
-    }
-
-    function renderChart() {
-      const canvas = document.getElementById('weightChart');
-      if (!canvas) return;
-
-      if (typeof Chart === 'undefined') return;
-
-      try {
-        const ctx = canvas.getContext('2d');
-        if (myChart) {
-          myChart.destroy();
-        }
-
-        const labels = weightHistory.map(w => w.date);
-        const data = weightHistory.map(w => w.weight);
-
-        myChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Peso (kg)',
-              data: data,
-              borderColor: '#38BDF8',
-              backgroundColor: 'rgba(56, 189, 248, 0.15)',
-              fill: true,
-              tension: 0.3,
-              pointBackgroundColor: '#38BDF8',
-              pointRadius: 5
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false }
+        // Global State
+        let appData = {
+            profile: {
+                name: "Atleta",
+                height: 175,
+                initialWeight: 80.0,
+                targetWeight: 72.0
             },
-            scales: {
-              x: {
-                grid: { color: '#334155' },
-                ticks: { color: '#94A3B8' }
-              },
-              y: {
-                grid: { color: '#334155' },
-                ticks: { color: '#94A3B8' }
-              }
-            }
-          }
-        });
-      } catch (e) {
-        console.error(e);
-      }
-    }
+            weightLogs: [
+                { id: '1', date: '2026-10-01', weight: 80.0, notes: 'Peso inicial' },
+                { id: '2', date: '2026-10-08', weight: 79.2, notes: 'Primera semana' },
+                { id: '3', date: '2026-10-15', weight: 78.4, notes: 'Constante en la rutina' }
+            ],
+            workouts: [],
+            currentSession: 'A',
+            activeWorkoutState: {}
+        };
 
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      if (!toast) return;
-      toast.innerText = msg;
-      toast.classList.remove('hidden');
-      setTimeout(() => {
-        toast.classList.add('hidden');
-      }, 2500);
-    }
-  </script>
+        // Live Timers State
+        let sessionTimerInterval = null;
+        let sessionSeconds = 0;
+        let isSessionActive = false;
+
+        let activeExerciseId = null;
+        let exerciseTimers = {}; // { exId: seconds }
+        let exerciseInterval = null;
+
+        // 90-Second Rest Timer State
+        let restTimerInterval = null;
+        let restSecondsLeft = 90;
+        const REST_TOTAL = 90;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            updateCurrentDate();
+            initActiveWorkoutState();
+            renderWorkout();
+            updateProfileUI();
+            renderWeightLogs();
+            renderHistory();
+            checkNotificationStatus();
+            lucide.createIcons();
+        });
+
+        function updateCurrentDate() {
+            const options = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
+            const today = new Date().toLocaleDateString('es-ES', options);
+            document.getElementById('current-date-display').textContent = today;
+
+            const isoToday = new Date().toISOString().split('T')[0];
+            document.getElementById('weight-input-date').value = isoToday;
+        }
+
+        function loadFromStorage() {
+            const saved = localStorage.getItem('fitdumbbell_v3_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.profile) appData.profile = parsed.profile;
+                    if (parsed.weightLogs) appData.weightLogs = parsed.weightLogs;
+                    if (parsed.workouts) appData.workouts = parsed.workouts;
+                    if (parsed.currentSession) appData.currentSession = parsed.currentSession;
+                } catch (e) {
+                    console.error("Error al cargar localStorage", e);
+                }
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('fitdumbbell_v3_data', JSON.stringify(appData));
+        }
+
+        // Navigation Switcher
+        function switchTab(tabName) {
+            ['workout', 'progress', 'calendar', 'history'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${t}`).className = "flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all";
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tabName}`).className = "flex flex-col items-center space-y-1 text-ios-green transition-all";
+
+            if (tabName === 'progress') renderWeightLogs();
+            if (tabName === 'history') renderHistory();
+
+            lucide.createIcons();
+        }
+
+        // Profile Management
+        function openProfileModal() {
+            document.getElementById('prof-name-input').value = appData.profile.name || '';
+            document.getElementById('prof-height-input').value = appData.profile.height || '';
+            document.getElementById('prof-initweight-input').value = appData.profile.initialWeight || '';
+            document.getElementById('prof-targetweight-input').value = appData.profile.targetWeight || '';
+
+            document.getElementById('modal-profile').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('modal-profile').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function saveProfile() {
+            const name = document.getElementById('prof-name-input').value.trim() || 'Atleta';
+            const height = parseFloat(document.getElementById('prof-height-input').value) || 170;
+            const initWeight = parseFloat(document.getElementById('prof-initweight-input').value) || 75;
+            const targetWeight = parseFloat(document.getElementById('prof-targetweight-input').value) || 70;
+
+            appData.profile = { name, height, initialWeight: initWeight, targetWeight };
+
+            saveToStorage();
+            updateProfileUI();
+            renderWeightLogs();
+            closeProfileModal();
+            showToast('Perfil actualizado correctamente', 'user-check');
+        }
+
+        function updateProfileUI() {
+            const prof = appData.profile;
+            const initials = prof.name ? prof.name.substring(0,2).toUpperCase() : 'AT';
+
+            document.getElementById('header-avatar-text').textContent = initials;
+            document.getElementById('header-user-name').textContent = `Hola, ${prof.name}`;
+            document.getElementById('banner-user-name').textContent = prof.name;
+            document.getElementById('banner-user-details').textContent = `Estatura: ${prof.height} cm • Peso Inicial: ${prof.initialWeight} kg`;
+
+            const latestWeightLog = appData.weightLogs.length > 0 ? appData.weightLogs[0].weight : prof.initialWeight;
+            document.getElementById('kpi-current-weight').textContent = `${latestWeightLog.toFixed(1)} kg`;
+
+            const diffFromInit = (latestWeightLog - prof.initialWeight).toFixed(1);
+            const diffSign = diffFromInit > 0 ? `+${diffFromInit}` : diffFromInit;
+            document.getElementById('kpi-weight-change').textContent = `${diffSign} kg vs inicio`;
+
+            document.getElementById('kpi-target-weight').textContent = `${prof.targetWeight.toFixed(1)} kg`;
+
+            const totalToLoseGain = Math.abs(prof.initialWeight - prof.targetWeight);
+            const currentAchieved = Math.abs(prof.initialWeight - latestWeightLog);
+            let progressPct = totalToLoseGain > 0 ? Math.min(100, Math.round((currentAchieved / totalToLoseGain) * 100)) : 100;
+            if (isNaN(progressPct)) progressPct = 0;
+            document.getElementById('kpi-target-progress').textContent = `${progressPct}% meta`;
+
+            const heightInMeters = prof.height / 100;
+            if (heightInMeters > 0) {
+                const bmi = (latestWeightLog / (heightInMeters * heightInMeters)).toFixed(1);
+                document.getElementById('kpi-bmi-val').textContent = bmi;
+
+                let status = 'Normal';
+                let colorClass = 'text-ios-green';
+                if (bmi < 18.5) { status = 'Bajo peso'; colorClass = 'text-ios-blue'; }
+                else if (bmi >= 25 && bmi < 29.9) { status = 'Sobrepeso'; colorClass = 'text-ios-orange'; }
+                else if (bmi >= 30) { status = 'Obesidad'; colorClass = 'text-ios-red'; }
+
+                const statusEl = document.getElementById('kpi-bmi-status');
+                statusEl.textContent = status;
+                statusEl.className = `text-[9px] font-bold block ${colorClass}`;
+            }
+        }
+
+        // Session Selector Logic
+        function selectSession(sessionKey) {
+            if (isSessionActive) {
+                showToast('Finaliza la sesión actual antes de cambiar de rutina', 'alert-triangle');
+                return;
+            }
+
+            appData.currentSession = sessionKey;
+            
+            const btnA = document.getElementById('btn-session-a');
+            const btnB = document.getElementById('btn-session-b');
+
+            if (sessionKey === 'A') {
+                btnA.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 bg-ios-blue text-white shadow-lg";
+                btnB.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 text-ios-gray hover:text-white";
+            } else {
+                btnB.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 bg-ios-blue text-white shadow-lg";
+                btnA.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 text-ios-gray hover:text-white";
+            }
+
+            initActiveWorkoutState();
+            renderWorkout();
+            saveToStorage();
+        }
+
+        function initActiveWorkoutState() {
+            const currentDef = WORKOUT_DEFINITIONS[appData.currentSession];
+            appData.activeWorkoutState = {
+                sessionKey: appData.currentSession,
+                exercises: {}
+            };
+            exerciseTimers = {};
+
+            currentDef.exercises.forEach(ex => {
+                let lastWeight = ex.defaultWeight;
+                for (let i = appData.workouts.length - 1; i >= 0; i--) {
+                    const found = appData.workouts[i].exercises.find(e => e.name === ex.name);
+                    if (found && found.sets && found.sets.length > 0) {
+                        lastWeight = found.sets[0].weight || ex.defaultWeight;
+                        break;
+                    }
+                }
+
+                exerciseTimers[ex.id] = 0;
+                appData.activeWorkoutState.exercises[ex.id] = {
+                    name: ex.name,
+                    // ALWAYS 3 SETS as requested
+                    sets: Array.from({ length: 3 }, () => ({
+                        weight: lastWeight,
+                        reps: parseInt(ex.targetReps) || 10,
+                        completed: false
+                    }))
+                };
+            });
+        }
+
+        // Live Timers Logic
+        function toggleStartSession() {
+            if (!isSessionActive) {
+                startSession();
+            } else {
+                pauseSession();
+            }
+        }
+
+        function startSession() {
+            isSessionActive = true;
+            document.getElementById('session-dot').className = "w-2 h-2 rounded-full bg-ios-green animate-ping";
+            document.getElementById('header-session-status').className = "px-3 py-1.5 bg-ios-green/10 border border-ios-green/40 rounded-full text-xs font-semibold flex items-center space-x-1.5 text-ios-green";
+            
+            document.getElementById('btn-start-session').className = "px-4 py-2.5 bg-ios-orange hover:bg-amber-400 text-black font-extrabold text-xs rounded-xl shadow-lg active:scale-95 transition-all flex items-center space-x-1.5";
+            document.getElementById('btn-start-session-text').textContent = "PAUSAR";
+
+            clearInterval(sessionTimerInterval);
+            sessionTimerInterval = setInterval(() => {
+                sessionSeconds++;
+                updateSessionTimerDisplay();
+            }, 1000);
+
+            showToast('Sesión de entrenamiento iniciada ✓', 'play');
+        }
+
+        function pauseSession() {
+            isSessionActive = false;
+            clearInterval(sessionTimerInterval);
+            if (exerciseInterval) clearInterval(exerciseInterval);
+
+            document.getElementById('session-dot').className = "w-2 h-2 rounded-full bg-ios-orange";
+            document.getElementById('header-session-status').className = "px-3 py-1.5 bg-ios-orange/10 border border-ios-orange/40 rounded-full text-xs font-semibold flex items-center space-x-1.5 text-ios-orange";
+            
+            document.getElementById('btn-start-session').className = "px-4 py-2.5 bg-ios-green hover:bg-emerald-400 text-black font-extrabold text-xs rounded-xl shadow-lg active:scale-95 transition-all flex items-center space-x-1.5";
+            document.getElementById('btn-start-session-text').textContent = "REANUDAR";
+
+            showToast('Sesión pausada', 'pause');
+        }
+
+        function updateSessionTimerDisplay() {
+            const formatted = formatSeconds(sessionSeconds);
+            document.getElementById('session-total-timer-display').textContent = formatted;
+            document.getElementById('header-timer-text').textContent = formatted.substring(3); // MM:SS
+        }
+
+        function toggleExerciseTimer(exId) {
+            if (!isSessionActive) {
+                startSession();
+            }
+
+            if (activeExerciseId === exId) {
+                // Pause active exercise timer
+                clearInterval(exerciseInterval);
+                activeExerciseId = null;
+                showToast('Tiempo de ejercicio pausado', 'pause');
+            } else {
+                // Switch/Start new exercise timer
+                if (exerciseInterval) clearInterval(exerciseInterval);
+                activeExerciseId = exId;
+
+                exerciseInterval = setInterval(() => {
+                    if (exerciseTimers[exId] !== undefined) {
+                        exerciseTimers[exId]++;
+                        const timerDisplayEl = document.getElementById(`timer-ex-${exId}`);
+                        if (timerDisplayEl) {
+                            timerDisplayEl.textContent = formatSecondsShort(exerciseTimers[exId]);
+                        }
+                    }
+                }, 1000);
+
+                showToast('Ejercicio en marcha ✓', 'dumbbell');
+            }
+
+            renderWorkout();
+        }
+
+        // Render Active Workout List
+        function renderWorkout() {
+            const def = WORKOUT_DEFINITIONS[appData.currentSession];
+            document.getElementById('session-title').textContent = def.title;
+            document.getElementById('session-desc').textContent = def.desc;
+
+            const container = document.getElementById('exercises-list');
+            container.innerHTML = '';
+
+            let totalCompletedSets = 0;
+            const totalSetsCount = def.exercises.length * 3; // Always 3 sets per exercise
+
+            def.exercises.forEach((ex) => {
+                const exState = appData.activeWorkoutState.exercises[ex.id];
+                const isExActive = (activeExerciseId === ex.id);
+                const exTime = exerciseTimers[ex.id] || 0;
+
+                const card = document.createElement('div');
+                card.className = `bg-ios-card rounded-2xl p-4 border ${isExActive ? 'border-ios-green shadow-lg shadow-ios-green/10' : 'border-zinc-800/80'} shadow-md space-y-3 transition-all`;
+
+                let setsHtml = '';
+                exState.sets.forEach((st, setIdx) => {
+                    if (st.completed) totalCompletedSets++;
+
+                    setsHtml += `
+                        <div class="flex items-center justify-between bg-zinc-900/90 p-2.5 rounded-xl border ${st.completed ? 'border-ios-green/40 bg-ios-green/5' : 'border-zinc-800'} transition-all">
+                            <span class="text-xs font-extrabold text-ios-gray w-16">Serie ${setIdx + 1} de 3</span>
+                            
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center space-x-1">
+                                    <input type="number" step="0.5" value="${st.weight}" onchange="updateSetInput('${ex.id}', ${setIdx}, 'weight', this.value)" class="w-14 bg-zinc-950 border border-zinc-800 rounded-lg py-1 px-1.5 text-center text-xs font-bold text-white focus:border-ios-blue focus:outline-none">
+                                    <span class="text-[10px] text-ios-gray font-medium">kg</span>
+                                </div>
+
+                                <div class="flex items-center space-x-1">
+                                    <input type="number" value="${st.reps}" onchange="updateSetInput('${ex.id}', ${setIdx}, 'reps', this.value)" class="w-12 bg-zinc-950 border border-zinc-800 rounded-lg py-1 px-1.5 text-center text-xs font-bold text-white focus:border-ios-blue focus:outline-none">
+                                    <span class="text-[10px] text-ios-gray font-medium">reps</span>
+                                </div>
+                            </div>
+
+                            <button onclick="handleSetCompletion('${ex.id}', ${setIdx})" class="w-8 h-8 rounded-xl flex items-center justify-center transition-all ${st.completed ? 'bg-ios-green text-black font-extrabold shadow-md scale-105' : 'bg-zinc-800 text-ios-gray hover:text-white'}">
+                                <i data-lucide="check" class="w-4 h-4 stroke-[3]"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center">
+                                <span class="w-2 h-2 rounded-full ${isExActive ? 'bg-ios-green animate-ping' : 'bg-ios-blue'} mr-2"></span>
+                                ${ex.name}
+                            </h3>
+                            <p class="text-[11px] text-ios-gray mt-0.5">
+                                Meta: 3 series x ${ex.targetReps} reps • Descanso: 90s
+                            </p>
+                        </div>
+
+                        <!-- Individual Exercise Timer & Toggle Button -->
+                        <div class="text-right flex flex-col items-end">
+                            <span class="text-xs font-mono font-black ${isExActive ? 'text-ios-green' : 'text-ios-gray'}" id="timer-ex-${ex.id}">
+                                ${formatSecondsShort(exTime)}
+                            </span>
+                            <button onclick="toggleExerciseTimer('${ex.id}')" class="mt-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${isExActive ? 'bg-ios-green text-black' : 'bg-zinc-800 text-ios-blue border border-zinc-700'} flex items-center space-x-1">
+                                <i data-lucide="${isExActive ? 'pause' : 'play'}" class="w-3 h-3 fill-current"></i>
+                                <span>${isExActive ? 'En Progreso' : 'Iniciar Ejercicio'}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    ${ex.tip ? `<p class="text-[11px] text-zinc-400 bg-zinc-900/60 p-2 rounded-xl border border-zinc-800/60 italic flex items-center"><i data-lucide="lightbulb" class="w-3.5 h-3.5 mr-1.5 text-ios-orange flex-shrink-0"></i>${ex.tip}</p>` : ''}
+
+                    <div class="space-y-2 pt-1">
+                        ${setsHtml}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            document.getElementById('completed-sets-counter').textContent = `${totalCompletedSets}/${totalSetsCount} Series`;
+            lucide.createIcons();
+        }
+
+        function updateSetInput(exId, setIdx, field, val) {
+            if (appData.activeWorkoutState.exercises[exId]) {
+                appData.activeWorkoutState.exercises[exId].sets[setIdx][field] = parseFloat(val) || 0;
+            }
+        }
+
+        function handleSetCompletion(exId, setIdx) {
+            const exState = appData.activeWorkoutState.exercises[exId];
+            const setObj = exState.sets[setIdx];
+            setObj.completed = !setObj.completed;
+
+            if (setObj.completed) {
+                showToast(`Serie ${setIdx + 1} de 3 completada ✓`, 'check-circle-2');
+                // Automatically open 90-Second Rest Timer modal
+                trigger90sRestTimer(exState.name);
+            }
+
+            renderWorkout();
+        }
+
+        // 90-Second Rest Timer Controller
+        function trigger90sRestTimer(exerciseName) {
+            restSecondsLeft = REST_TOTAL;
+            document.getElementById('rest-modal-exercise-name').textContent = exerciseName;
+            updateRestTimerUI();
+
+            const modal = document.getElementById('rest-timer-modal');
+            const card = document.getElementById('rest-timer-card');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+
+            clearInterval(restTimerInterval);
+            restTimerInterval = setInterval(() => {
+                if (restSecondsLeft > 0) {
+                    restSecondsLeft--;
+                    updateRestTimerUI();
+                } else {
+                    clearInterval(restTimerInterval);
+                    playRestBeepAndVibrate();
+                    closeRestTimerModal();
+                    showToast('¡Descanso terminado! Siguiente serie listo', 'bell');
+                }
+            }, 1000);
+        }
+
+        function updateRestTimerUI() {
+            document.getElementById('rest-seconds-display').textContent = `${restSecondsLeft}s`;
+            const circle = document.getElementById('rest-progress-circle');
+            const circumference = 263.89; // 2 * pi * 42
+            const offset = circumference - (restSecondsLeft / REST_TOTAL) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function addRestTime(seconds) {
+            restSecondsLeft += seconds;
+            updateRestTimerUI();
+            showToast(`+${seconds}s añadidos al descanso`, 'plus');
+        }
+
+        function skipRestTimer() {
+            clearInterval(restTimerInterval);
+            closeRestTimerModal();
+            showToast('Descanso omitido', 'fast-forward');
+        }
+
+        function closeRestTimerModal() {
+            const modal = document.getElementById('rest-timer-modal');
+            const card = document.getElementById('rest-timer-card');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function playRestBeepAndVibrate() {
+            if ("vibrate" in navigator) {
+                try { navigator.vibrate([200, 100, 200]); } catch(e){}
+            }
+
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.9);
+            } catch (e) {
+                console.log("Audio API unlock", e);
+            }
+        }
+
+        // Finish Workout & Save Data with Timers
+        function finishWorkout() {
+            const currentDef = WORKOUT_DEFINITIONS[appData.currentSession];
+            let totalVolume = 0;
+            let totalSetsCompleted = 0;
+            let savedExercises = [];
+
+            Object.keys(appData.activeWorkoutState.exercises).forEach(exId => {
+                const ex = appData.activeWorkoutState.exercises[exId];
+                const completedSets = ex.sets.filter(s => s.completed);
+
+                completedSets.forEach(s => {
+                    totalVolume += (s.weight * s.reps);
+                    totalSetsCompleted++;
+                });
+
+                savedExercises.push({
+                    id: exId,
+                    name: ex.name,
+                    sets: completedSets,
+                    durationSeconds: exerciseTimers[exId] || 0
+                });
+            });
+
+            if (totalSetsCompleted === 0) {
+                showToast('Marca al menos 1 serie completada antes de guardar', 'alert-circle');
+                return;
+            }
+
+            pauseSession();
+
+            const notes = document.getElementById('workout-notes').value.trim();
+
+            const workoutLog = {
+                id: Date.now().toString(),
+                date: new Date().toISOString(),
+                sessionKey: appData.currentSession,
+                sessionTitle: currentDef.title,
+                totalVolume: totalVolume,
+                setsCompleted: totalSetsCompleted,
+                totalDurationSeconds: sessionSeconds,
+                exercises: savedExercises,
+                notes: notes
+            };
+
+            appData.workouts.unshift(workoutLog);
+            saveToStorage();
+
+            document.getElementById('modal-summary-session').textContent = currentDef.title;
+            document.getElementById('modal-summary-duration').textContent = formatSecondsShort(sessionSeconds);
+            document.getElementById('modal-summary-volume').textContent = `${totalVolume.toLocaleString('es-ES')} kg`;
+            document.getElementById('modal-summary-sets').textContent = `${totalSetsCompleted} series`;
+
+            openCelebrationModal();
+
+            if (window.confetti) {
+                confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+            }
+
+            // Reset timers
+            sessionSeconds = 0;
+            updateSessionTimerDisplay();
+            document.getElementById('workout-notes').value = '';
+            initActiveWorkoutState();
+            renderWorkout();
+        }
+
+        // Weight Logging & Chart
+        function addWeightLog() {
+            const dateVal = document.getElementById('weight-input-date').value;
+            const weightVal = parseFloat(document.getElementById('weight-input-val').value);
+            const notesVal = document.getElementById('weight-input-notes').value.trim();
+
+            if (!weightVal || weightVal <= 0) {
+                showToast('Ingresa un peso válido', 'alert-circle');
+                return;
+            }
+
+            const newLog = {
+                id: Date.now().toString(),
+                date: dateVal || new Date().toISOString().split('T')[0],
+                weight: weightVal,
+                notes: notesVal
+            };
+
+            appData.weightLogs.unshift(newLog);
+            appData.weightLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            saveToStorage();
+            updateProfileUI();
+            renderWeightLogs();
+
+            document.getElementById('weight-input-val').value = '';
+            document.getElementById('weight-input-notes').value = '';
+
+            showToast('Pesaje registrado con éxito', 'check');
+        }
+
+        function deleteWeightLog(id) {
+            appData.weightLogs = appData.weightLogs.filter(w => w.id !== id);
+            saveToStorage();
+            updateProfileUI();
+            renderWeightLogs();
+            showToast('Pesaje eliminado', 'trash');
+        }
+
+        function renderWeightLogs() {
+            const container = document.getElementById('weight-history-list');
+            container.innerHTML = '';
+
+            if (appData.weightLogs.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-ios-card rounded-xl p-4 text-center border border-zinc-800">
+                        <p class="text-xs text-ios-gray">Aún no has registrado pesajes semanales.</p>
+                    </div>
+                `;
+            } else {
+                appData.weightLogs.forEach((log) => {
+                    const dateObj = new Date(log.date + 'T00:00:00');
+                    const formattedDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                    const item = document.createElement('div');
+                    item.className = "bg-ios-card rounded-xl p-3 border border-zinc-800/80 flex items-center justify-between";
+                    item.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl bg-ios-green/10 border border-ios-green/30 flex items-center justify-center text-ios-green font-black text-xs">
+                                ${log.weight}
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">${log.weight} kg</div>
+                                <div class="text-[10px] text-ios-gray">${formattedDate} ${log.notes ? '• ' + log.notes : ''}</div>
+                            </div>
+                        </div>
+                        <button onclick="deleteWeightLog('${log.id}')" class="text-ios-gray hover:text-ios-red p-1 transition-colors">
+                            <i data-lucide="trash" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            renderWeightChart();
+            lucide.createIcons();
+        }
+
+        function renderWeightChart() {
+            const canvas = document.getElementById('weightChartCanvas');
+            const emptyMsg = document.getElementById('weight-chart-empty-msg');
+
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            const sortedLogs = [...appData.weightLogs].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (sortedLogs.length < 2) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+
+            const padding = 35;
+            const width = canvas.width - (padding * 2);
+            const height = canvas.height - (padding * 2);
+
+            const weights = sortedLogs.map(p => p.weight);
+            const targetW = appData.profile.targetWeight || weights[0];
+            
+            const allVals = [...weights, targetW];
+            const minW = Math.min(...allVals) - 1;
+            const maxW = Math.max(...allVals) + 1;
+
+            // Target Line (Orange Dashed)
+            const targetY = canvas.height - padding - ((targetW - minW) / (maxW - minW || 1)) * height;
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#FF9F0A';
+            ctx.lineWidth = 1.5;
+            ctx.moveTo(padding, targetY);
+            ctx.lineTo(canvas.width - padding, targetY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#FF9F0A';
+            ctx.font = '10px -apple-system, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Meta ${targetW}kg`, canvas.width - padding, targetY - 4);
+
+            // Actual Weight Line (Green)
+            ctx.beginPath();
+            ctx.strokeStyle = '#30D158';
+            ctx.lineWidth = 3;
+
+            sortedLogs.forEach((pt, idx) => {
+                const x = padding + (idx / (sortedLogs.length - 1)) * width;
+                const y = canvas.height - padding - ((pt.weight - minW) / (maxW - minW || 1)) * height;
+
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Data Points
+            sortedLogs.forEach((pt, idx) => {
+                const x = padding + (idx / (sortedLogs.length - 1)) * width;
+                const y = canvas.height - padding - ((pt.weight - minW) / (maxW - minW || 1)) * height;
+
+                ctx.beginPath();
+                ctx.fillStyle = '#0A84FF';
+                ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                const d = new Date(pt.date + 'T00:00:00');
+                const labelDate = `${d.getDate()}/${d.getMonth()+1}`;
+
+                ctx.fillStyle = '#8E8E93';
+                ctx.font = '9px -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${pt.weight}k`, x, y - 7);
+                ctx.fillText(labelDate, x, canvas.height - 8);
+            });
+        }
+
+        // Calendar Export (.ICS) & Snooze
+        function downloadICSFile() {
+            const icsData = 
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//FitDumbbell//iOS Routine//ES
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+SUMMARY:FitDumbbell - Entrenamiento 23:00 HS
+DESCRIPTION:Sesión de pesas de 3 series con mancuernas de 4kg y 7.5kg.
+DTSTART:20261026T230000
+DTEND:20261026T234500
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:¡Hora de entrenar en FitDumbbell!
+TRIGGER:-PT15M
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+            const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute('download', 'FitDumbbell_Entrenamiento_23hs.ics');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('Archivo .ICS descargado. Ábrelo en iPhone', 'calendar');
+        }
+
+        function snoozeReminder24h() {
+            showToast('Entrenamiento pospuesto 24 horas', 'clock');
+        }
+
+        // iPhone Notifications Check
+        function checkNotificationStatus() {
+            const badge = document.getElementById('notif-status-badge');
+            if (!("Notification" in window)) {
+                badge.textContent = "No Soportado";
+                badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-ios-gray border border-zinc-700";
+                return;
+            }
+
+            if (Notification.permission === "granted") {
+                badge.textContent = "Activo ✓";
+                badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-ios-green/10 text-ios-green border border-ios-green/30";
+                document.getElementById('btn-request-notif').classList.add('hidden');
+            } else {
+                badge.textContent = "Inactivo";
+                badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-ios-gray border border-zinc-700";
+                document.getElementById('btn-request-notif').classList.remove('hidden');
+            }
+        }
+
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                showToast("Tu navegador no soporta notificaciones", "alert-triangle");
+                return;
+            }
+
+            Notification.requestPermission().then(permission => {
+                checkNotificationStatus();
+                if (permission === "granted") {
+                    showToast("¡Recordatorios activados!", "check-circle");
+                } else {
+                    showToast("Permiso de notificaciones denegado", "alert-circle");
+                }
+            });
+        }
+
+        // Render History with Duration Breakdown
+        function renderHistory() {
+            const totalWorkouts = appData.workouts.length;
+            let totalVolume = 0;
+
+            appData.workouts.forEach(w => {
+                totalVolume += (w.totalVolume || 0);
+            });
+
+            document.getElementById('stat-total-workouts').textContent = totalWorkouts;
+            document.getElementById('stat-total-volume').textContent = `${totalVolume.toLocaleString('es-ES')} kg`;
+            document.getElementById('stat-streak').textContent = `${calculateUniqueDays()}`;
+
+            const container = document.getElementById('workout-history-list');
+            document.getElementById('logs-count').textContent = `${totalWorkouts} registros`;
+            container.innerHTML = '';
+
+            if (totalWorkouts === 0) {
+                container.innerHTML = `
+                    <div class="bg-ios-card rounded-2xl p-6 text-center border border-zinc-800/80">
+                        <i data-lucide="clipboard-list" class="w-8 h-8 mx-auto text-ios-gray mb-2"></i>
+                        <p class="text-xs text-ios-gray">Aún no has registrado ningún entrenamiento.</p>
+                        <p class="text-[10px] text-zinc-500 mt-1">Inicia tu primera sesión en la pestaña "Entrenar".</p>
+                    </div>
+                `;
+            } else {
+                appData.workouts.forEach(log => {
+                    const dateObj = new Date(log.date);
+                    const formattedDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                    const formattedTime = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                    const totalDurStr = formatSecondsShort(log.totalDurationSeconds || 0);
+
+                    const card = document.createElement('div');
+                    card.className = "bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3";
+
+                    let exDetailsHtml = '';
+                    log.exercises.forEach(ex => {
+                        const setSummary = ex.sets.map(s => `${s.weight}kg × ${s.reps}`).join(', ');
+                        const exDurStr = formatSecondsShort(ex.durationSeconds || 0);
+
+                        exDetailsHtml += `
+                            <div class="text-xs border-b border-zinc-800/50 pb-2 last:border-0 last:pb-0">
+                                <div class="flex justify-between items-center font-semibold text-white">
+                                    <span>${ex.name} (3 series)</span>
+                                    <span class="text-[10px] text-ios-green font-mono">${exDurStr}</span>
+                                </div>
+                                <div class="text-[11px] text-ios-gray mt-0.5">${setSummary || 'Sin series completadas'}</div>
+                            </div>
+                        `;
+                    });
+
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] uppercase font-bold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-full border border-ios-blue/20">
+                                    ${log.sessionTitle}
+                                </span>
+                                <div class="text-xs text-ios-gray mt-1">${formattedDate} • ${formattedTime}</div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-mono font-bold text-ios-orange bg-ios-orange/10 px-2 py-0.5 rounded-md border border-ios-orange/30">
+                                    ⏱️ ${totalDurStr}
+                                </span>
+                                <button onclick="deleteWorkoutLog('${log.id}')" class="text-ios-gray hover:text-ios-red p-1 transition-colors">
+                                    <i data-lucide="trash" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-zinc-900/90 rounded-xl p-3 border border-zinc-800/80 space-y-2">
+                            ${exDetailsHtml}
+                        </div>
+
+                        ${log.notes ? `<p class="text-xs text-ios-gray italic bg-zinc-950 p-2 rounded-lg">"${log.notes}"</p>` : ''}
+
+                        <div class="flex justify-between items-center text-[11px] text-ios-gray pt-1 border-t border-zinc-800/50">
+                            <span>Volumen: <strong class="text-ios-green">${log.totalVolume} kg</strong></span>
+                            <span>Series: <strong class="text-white">${log.setsCompleted}/9</strong></span>
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+            }
+
+            lucide.createIcons();
+        }
+
+        function calculateUniqueDays() {
+            if (appData.workouts.length === 0) return 0;
+            const dates = appData.workouts.map(w => new Date(w.date).toDateString());
+            return [...new Set(dates)].length;
+        }
+
+        function deleteWorkoutLog(id) {
+            appData.workouts = appData.workouts.filter(w => w.id !== id);
+            saveToStorage();
+            renderHistory();
+            showToast('Registro eliminado', 'trash');
+        }
+
+        // Helpers
+        function formatSeconds(totalSecs) {
+            const hrs = Math.floor(totalSecs / 3600);
+            const mins = Math.floor((totalSecs % 3600) / 60);
+            const secs = totalSecs % 60;
+            return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        }
+
+        function formatSecondsShort(totalSecs) {
+            const mins = Math.floor(totalSecs / 60);
+            const secs = totalSecs % 60;
+            return `${String(mins).padStart(2,'0')}m ${String(secs).padStart(2,'0')}s`;
+        }
+
+        // Backup & Restore Utilities
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `fitdumbbell_backup_${new Date().toISOString().slice(0,10)}.json`);
+            dlAnchorElem.click();
+            showToast('Copia JSON descargada', 'download');
+        }
+
+        function triggerImportJSON() {
+            document.getElementById('import-file-input').click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.profile && imported.workouts) {
+                        appData = imported;
+                        saveToStorage();
+                        renderWorkout();
+                        updateProfileUI();
+                        renderWeightLogs();
+                        renderHistory();
+                        showToast('Datos importados con éxito', 'check');
+                    } else {
+                        showToast('Formato JSON no válido', 'alert-circle');
+                    }
+                } catch (err) {
+                    showToast('Error al leer el archivo JSON', 'alert-circle');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmResetData() {
+            document.getElementById('modal-reset').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeResetModal() {
+            document.getElementById('modal-reset').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function executeResetData() {
+            localStorage.removeItem('fitdumbbell_v3_data');
+            appData = {
+                profile: { name: "Atleta", height: 175, initialWeight: 80.0, targetWeight: 72.0 },
+                weightLogs: [],
+                workouts: [],
+                currentSession: 'A',
+                activeWorkoutState: {}
+            };
+            initActiveWorkoutState();
+            renderWorkout();
+            updateProfileUI();
+            renderWeightLogs();
+            renderHistory();
+            closeResetModal();
+            showToast('Todos los datos han sido borrados', 'trash-2');
+        }
+
+        // Modals & Toast Handlers
+        function openCelebrationModal() {
+            const modal = document.getElementById('modal-celebration');
+            const card = document.getElementById('modal-celebration-card');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closeCelebrationModal() {
+            const modal = document.getElementById('modal-celebration');
+            const card = document.getElementById('modal-celebration-card');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            switchTab('history');
+        }
+
+        function showToast(message, iconName = 'info') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            document.getElementById('toast-icon').setAttribute('data-lucide', iconName);
+            lucide.createIcons();
+
+            toast.classList.remove('opacity-0', '-translate-y-5', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-5', 'pointer-events-none');
+            }, 2500);
+        }
+    </script>
 </body>
 </html>
