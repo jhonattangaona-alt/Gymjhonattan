@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FitDumbbell - Mi Entrenamiento y Peso iOS</title>
+    
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FitDumbbell">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/isometric/180/dumbbell.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ios: {
+                            bg: '#000000',
+                            card: '#1c1c1e',
+                            cardSecondary: '#2c2c2e',
+                            blue: '#0A84FF',
+                            green: '#30D158',
+                            orange: '#FF9F0A',
+                            red: '#FF453A',
+                            purple: '#BF5AF2',
+                            teal: '#64D2FF',
+                            gray: '#8E8E93',
+                            gray2: '#aeaeb2',
+                            gray6: '#1c1c1e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Helvetica Neue"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        /* Custom iOS aesthetics & touches */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #000000;
+        }
+        
+        .glass-nav {
+            background: rgba(28, 28, 30, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .glass-header {
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        @keyframes ringPulse {
+            0% { transform: scale(0.98); opacity: 0.8; }
+            50% { transform: scale(1.02); opacity: 1; }
+            100% { transform: scale(0.98); opacity: 0.8; }
+        }
+        .timer-active {
+            animation: ringPulse 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-white font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-ios-blue selection:text-white">
+
+    <!-- HEADER SUPERIOR (iOS Style) -->
+    <header class="sticky top-0 z-40 glass-header border-b border-zinc-900 px-5 pt-3 pb-3 transition-all duration-300">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <button onclick="openProfileModal()" class="w-9 h-9 rounded-full bg-gradient-to-tr from-ios-blue via-ios-purple to-ios-green p-0.5 shadow-md active:scale-95 transition-transform">
+                    <div class="w-full h-full bg-zinc-900 rounded-full flex items-center justify-center text-xs font-black text-white" id="header-avatar-text">
+                        --
+                    </div>
+                </button>
+                <div>
+                    <div class="flex items-center space-x-1">
+                        <h1 class="text-base font-extrabold tracking-tight leading-none text-white" id="header-user-name">Hola, Atleta</h1>
+                        <button onclick="openProfileModal()" class="text-ios-gray hover:text-white p-0.5">
+                            <i data-lucide="edit-3" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-ios-gray font-medium tracking-wide uppercase mt-0.5" id="current-date-display">Cargando...</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleQuickTimer()" class="px-3 py-1.5 bg-zinc-800/80 hover:bg-zinc-700/80 rounded-full text-xs font-semibold text-ios-green flex items-center space-x-1.5 border border-zinc-700/50 active:scale-95 transition-all">
+                    <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                    <span id="header-timer-text">Timer</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-1 max-w-md w-full mx-auto px-4 pt-4 pb-32">
+        
+        <!-- ========================================== -->
+        <!-- TAB 1: ENTRENAR (WORKOUT TRACKER)          -->
+        <!-- ========================================== -->
+        <section id="tab-workout" class="space-y-5">
+            
+            <!-- Segmented Selector Session A/B -->
+            <div class="p-1 bg-zinc-900/90 border border-zinc-800 rounded-2xl flex relative shadow-inner">
+                <button id="btn-session-a" onclick="selectSession('A')" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 bg-ios-blue text-white shadow-lg">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                    <span>Sesión A: Piernas & Pecho</span>
+                </button>
+                <button id="btn-session-b" onclick="selectSession('B')" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 text-ios-gray hover:text-white">
+                    <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                    <span>Sesión B: Espalda & Hombros</span>
+                </button>
+            </div>
+
+            <!-- Active Routine Info Card -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 shadow-md flex items-center justify-between">
+                <div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-ios-blue" id="session-tag">RUTINA CON MANCUERNAS</div>
+                    <h2 class="text-base font-black text-white mt-0.5" id="session-title">Sesión A: Piernas y Empuje</h2>
+                    <p class="text-xs text-ios-gray mt-0.5" id="session-desc">Sentadilla, Press Pecho y Peso Muerto</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block px-2.5 py-1 bg-ios-blue/10 border border-ios-blue/30 rounded-full text-[11px] font-bold text-ios-blue" id="completed-sets-counter">0/9 Series</span>
+                </div>
+            </div>
+
+            <!-- Exercises List -->
+            <div id="exercises-list" class="space-y-4">
+                <!-- Dynamic exercise cards rendered here -->
+            </div>
+
+            <!-- Session Notes Card -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80">
+                <label class="text-xs font-semibold text-ios-gray uppercase tracking-wider block mb-2 flex items-center">
+                    <i data-lucide="notebook" class="w-3.5 h-3.5 mr-1.5 text-ios-blue"></i>
+                    Notas de la sesión
+                </label>
+                <textarea id="workout-notes" rows="2" placeholder="¿Cómo te sentiste hoy? (Ej: Buena técnica, logré las 12 reps con 7.5kg...)" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-ios-blue transition-all resize-none"></textarea>
+            </div>
+
+            <!-- Complete Session Button -->
+            <button onclick="finishWorkout()" class="w-full py-4 bg-gradient-to-r from-ios-green to-emerald-500 hover:opacity-95 text-black font-extrabold text-base rounded-2xl shadow-lg shadow-ios-green/20 flex items-center justify-center space-x-2 active:scale-[0.98] transition-all">
+                <i data-lucide="check-circle-2" class="w-5 h-5 stroke-[2.5]"></i>
+                <span>FINALIZAR Y GUARDAR ENTRENAMIENTO</span>
+            </button>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- TAB 2: PROGRESO Y PESO (PROFILE & WEIGHT)  -->
+        <!-- ========================================== -->
+        <section id="tab-progress" class="space-y-5 hidden">
+            
+            <!-- User Profile & BMI Overview Banner -->
+            <div class="bg-gradient-to-br from-zinc-900 via-ios-card to-zinc-900 rounded-2xl p-4 border border-zinc-800 shadow-md space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-ios-blue/15 border border-ios-blue/30 flex items-center justify-center text-ios-blue">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-white" id="banner-user-name">Tu Perfil</h3>
+                            <p class="text-xs text-ios-gray" id="banner-user-details">Estatura: -- cm • Peso Inicial: -- kg</p>
+                        </div>
+                    </div>
+                    <button onclick="openProfileModal()" class="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-semibold text-ios-blue border border-zinc-700/60 active:scale-95 transition-all flex items-center space-x-1">
+                        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                        <span>Editar</span>
+                    </button>
+                </div>
+
+                <!-- KPI Grid Metrics -->
+                <div class="grid grid-cols-3 gap-2 pt-1 border-t border-zinc-800/80">
+                    <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50 text-center">
+                        <span class="text-[9px] uppercase font-bold text-ios-gray block">Peso Actual</span>
+                        <span class="text-base font-black text-white mt-0.5 block" id="kpi-current-weight">-- kg</span>
+                        <span class="text-[9px] text-ios-gray font-medium" id="kpi-weight-change">-- kg</span>
+                    </div>
+
+                    <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50 text-center">
+                        <span class="text-[9px] uppercase font-bold text-ios-gray block">Meta</span>
+                        <span class="text-base font-black text-ios-blue mt-0.5 block" id="kpi-target-weight">-- kg</span>
+                        <span class="text-[9px] text-ios-blue font-medium" id="kpi-target-progress">--%</span>
+                    </div>
+
+                    <div class="bg-zinc-950/60 p-2.5 rounded-xl border border-zinc-800/50 text-center">
+                        <span class="text-[9px] uppercase font-bold text-ios-gray block">IMC</span>
+                        <span class="text-base font-black text-ios-green mt-0.5 block" id="kpi-bmi-val">--</span>
+                        <span class="text-[9px] font-semibold block text-ios-green" id="kpi-bmi-status">Normal</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Weight Log Entry Box -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-white flex items-center">
+                        <i data-lucide="scale" class="w-4 h-4 mr-1.5 text-ios-green"></i>
+                        Registrar Peso Semanal
+                    </h3>
+                    <span class="text-[10px] font-semibold text-ios-green bg-ios-green/10 px-2 py-0.5 rounded-full border border-ios-green/20">Semana a semana</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-ios-gray block mb-1 uppercase font-bold">Fecha</label>
+                        <input type="date" id="weight-input-date" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-green">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-ios-gray block mb-1 uppercase font-bold">Peso (kg)</label>
+                        <input type="number" step="0.1" id="weight-input-val" placeholder="Ej: 75.2" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-ios-green">
+                    </div>
+                </div>
+
+                <div>
+                    <input type="text" id="weight-input-notes" placeholder="Nota opcional (Ej: En ayunas, lunes mañana...)" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-ios-green">
+                </div>
+
+                <button onclick="addWeightLog()" class="w-full py-2.5 bg-ios-green hover:bg-emerald-400 text-black font-extrabold text-xs rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center space-x-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4 stroke-[2.5]"></i>
+                    <span>GUARDAR PESO</span>
+                </button>
+            </div>
+
+            <!-- Weight Evolution Canvas Chart -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center">
+                            <i data-lucide="trending-down" class="w-4 h-4 mr-1.5 text-ios-blue"></i>
+                            Evolución de Tu Peso
+                        </h3>
+                        <p class="text-[11px] text-ios-gray">Línea naranja representa tu Peso Meta</p>
+                    </div>
+                </div>
+
+                <div class="relative h-48 w-full bg-zinc-950/80 rounded-xl p-2 border border-zinc-800/60 flex items-center justify-center">
+                    <canvas id="weightChartCanvas" class="w-full h-full"></canvas>
+                    <div id="weight-chart-empty-msg" class="absolute text-center text-xs text-ios-gray p-4">
+                        Registra al menos 2 pesajes para ver tu gráfica de evolución.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reminders & Notifications Settings Card -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center">
+                            <i data-lucide="bell" class="w-4 h-4 mr-1.5 text-ios-orange"></i>
+                            Recordatorios de iPhone
+                        </h3>
+                        <p class="text-[11px] text-ios-gray">Alertas automáticas para pesarte y entrenar</p>
+                    </div>
+                    <span id="notif-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-ios-gray border border-zinc-700">
+                        Inactivo
+                    </span>
+                </div>
+
+                <div class="bg-zinc-900 p-3 rounded-xl border border-zinc-800 text-xs space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-white font-semibold flex items-center">
+                            <i data-lucide="scale" class="w-3.5 h-3.5 mr-1.5 text-ios-green"></i>
+                            Pesaje Semanal
+                        </span>
+                        <span class="text-ios-gray text-[11px]">Cada Lunes 08:00 AM</span>
+                    </div>
+                    <div class="flex items-center justify-between pt-1 border-t border-zinc-800">
+                        <span class="text-white font-semibold flex items-center">
+                            <i data-lucide="dumbbell" class="w-3.5 h-3.5 mr-1.5 text-ios-blue"></i>
+                            Rutina de Pesas
+                        </span>
+                        <span class="text-ios-gray text-[11px]">Lun, Mié, Vie 19:00 PM</span>
+                    </div>
+                </div>
+
+                <button onclick="requestNotificationPermission()" id="btn-request-notif" class="w-full py-2.5 bg-zinc-800 hover:bg-zinc-700 text-ios-orange font-bold text-xs rounded-xl border border-zinc-700 active:scale-95 transition-all flex items-center justify-center space-x-1.5">
+                    <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                    <span>Activar Notificaciones en iPhone</span>
+                </button>
+            </div>
+
+            <!-- History of Weigh-ins -->
+            <div class="space-y-2">
+                <h3 class="text-xs font-bold text-ios-gray uppercase tracking-wider px-1">Historial de Pesajes</h3>
+                <div id="weight-history-list" class="space-y-2">
+                    <!-- Dynamic weight entries -->
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- TAB 3: HISTORIAL & AJUSTES (HISTORY)       -->
+        <!-- ========================================== -->
+        <section id="tab-history" class="space-y-5 hidden">
+            
+            <!-- Overall Stats Summary Grid -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-ios-card p-3.5 rounded-2xl border border-zinc-800/80 text-center">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-ios-gray block">Sesiones</span>
+                    <span id="stat-total-workouts" class="text-xl font-black text-white mt-1 block">0</span>
+                    <span class="text-[9px] text-ios-green font-semibold mt-0.5 block">Completadas</span>
+                </div>
+                <div class="bg-ios-card p-3.5 rounded-2xl border border-zinc-800/80 text-center">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-ios-gray block">Días Activo</span>
+                    <span id="stat-streak" class="text-xl font-black text-ios-orange mt-1 block">0</span>
+                    <span class="text-[9px] text-ios-gray font-semibold mt-0.5 block">Registrados</span>
+                </div>
+                <div class="bg-ios-card p-3.5 rounded-2xl border border-zinc-800/80 text-center">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-ios-gray block">Volumen</span>
+                    <span id="stat-total-volume" class="text-xl font-black text-ios-blue mt-1 block">0 kg</span>
+                    <span class="text-[9px] text-ios-gray font-semibold mt-0.5 block">Acumulado</span>
+                </div>
+            </div>
+
+            <!-- Workout Log Feed -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-xs font-bold text-ios-gray uppercase tracking-wider">Historial de Entrenamientos</h3>
+                    <span class="text-xs text-ios-blue font-semibold" id="logs-count">0 registros</span>
+                </div>
+
+                <div id="workout-history-list" class="space-y-3">
+                    <!-- Workout logs injected here -->
+                </div>
+            </div>
+
+            <!-- Data Export & Settings Box -->
+            <div class="bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3">
+                <h3 class="text-sm font-bold text-white flex items-center">
+                    <i data-lucide="sliders" class="w-4 h-4 mr-1.5 text-ios-gray"></i>
+                    Respaldo y Configuración
+                </h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportData()" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-semibold text-white flex items-center justify-center space-x-1.5 border border-zinc-700/50 active:scale-95 transition-all">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-ios-blue"></i>
+                        <span>Exportar JSON</span>
+                    </button>
+                    <button onclick="triggerImportJSON()" class="py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-semibold text-white flex items-center justify-center space-x-1.5 border border-zinc-700/50 active:scale-95 transition-all">
+                        <i data-lucide="upload" class="w-3.5 h-3.5 text-ios-green"></i>
+                        <span>Importar JSON</span>
+                    </button>
+                    <input type="file" id="import-file-input" class="hidden" accept=".json" onchange="importData(event)">
+                </div>
+
+                <button onclick="confirmResetData()" class="w-full py-2.5 bg-ios-red/10 hover:bg-ios-red/20 border border-ios-red/30 rounded-xl text-xs font-semibold text-ios-red flex items-center justify-center space-x-1.5 active:scale-95 transition-all">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span>Borrar todos los datos</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- FLOATING REST TIMER DRAWER                 -->
+    <!-- ========================================== -->
+    <div id="rest-timer-bar" class="fixed bottom-20 left-1/2 -translate-x-1/2 max-w-md w-[92%] glass-nav border border-zinc-700/80 rounded-2xl p-3 z-30 shadow-2xl transition-all duration-300 transform translate-y-32 opacity-0 pointer-events-none">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="relative flex items-center justify-center w-11 h-11 bg-zinc-900 border border-ios-green/40 rounded-full" id="timer-ring">
+                    <i data-lucide="timer" class="w-5 h-5 text-ios-green"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase font-bold text-ios-gray">Descanso Inteligente</div>
+                    <div id="timer-countdown-display" class="text-xl font-black tracking-tight text-white font-mono">01:30</div>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+                <button onclick="setTimerSeconds(60)" class="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-bold text-ios-green border border-zinc-700">60s</button>
+                <button onclick="setTimerSeconds(90)" class="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-bold text-ios-blue border border-zinc-700">90s</button>
+                <button id="timer-play-btn" onclick="toggleTimerPlay()" class="p-2 bg-ios-green text-black font-bold rounded-xl shadow-md active:scale-90 transition-all">
+                    <i data-lucide="play" class="w-4 h-4 stroke-[3]"></i>
+                </button>
+                <button onclick="closeQuickTimer()" class="p-2 text-ios-gray hover:text-white rounded-xl">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- BOTTOM TAB BAR (iOS Native Style)          -->
+    <!-- ========================================== -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 glass-nav border-t border-zinc-800/80 px-6 pt-2 pb-5">
+        <div class="max-w-md mx-auto flex justify-around items-center">
+            
+            <button onclick="switchTab('workout')" id="tab-btn-workout" class="flex flex-col items-center space-y-1 text-ios-green transition-all">
+                <i data-lucide="dumbbell" class="w-6 h-6 stroke-[2.2]"></i>
+                <span class="text-[10px] font-semibold tracking-tight">Entrenar</span>
+            </button>
+
+            <button onclick="switchTab('progress')" id="tab-btn-progress" class="flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all">
+                <i data-lucide="line-chart" class="w-6 h-6 stroke-[2]"></i>
+                <span class="text-[10px] font-semibold tracking-tight">Progreso</span>
+            </button>
+
+            <button onclick="switchTab('history')" id="tab-btn-history" class="flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all">
+                <i data-lucide="calendar" class="w-6 h-6 stroke-[2]"></i>
+                <span class="text-[10px] font-semibold tracking-tight">Historial</span>
+            </button>
+
+        </div>
+    </nav>
+
+
+    <!-- ========================================== -->
+    <!-- MODALS & TOAST NOTIFICATIONS              -->
+    <!-- ========================================== -->
+
+    <!-- Custom Toast -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 glass-nav border border-zinc-700 text-white px-4 py-2.5 rounded-full text-xs font-semibold shadow-2xl flex items-center space-x-2 transition-all duration-300 opacity-0 -translate-y-5 pointer-events-none">
+        <i data-lucide="info" class="w-4 h-4 text-ios-green" id="toast-icon"></i>
+        <span id="toast-message">Notificación</span>
+    </div>
+
+    <!-- Personal Profile Setup/Edit Modal -->
+    <div id="modal-profile" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-ios-card border border-zinc-700 rounded-3xl p-5 max-w-xs w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <h3 class="text-base font-bold text-white flex items-center">
+                    <i data-lucide="user-check" class="w-4 h-4 mr-2 text-ios-blue"></i>
+                    Tu Perfil Personal
+                </h3>
+                <button onclick="closeProfileModal()" class="text-ios-gray hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-ios-gray block mb-1">Tu Nombre:</label>
+                    <input type="text" id="prof-name-input" placeholder="Ej: Juan" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-blue">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs text-ios-gray block mb-1">Estatura (cm):</label>
+                        <input type="number" id="prof-height-input" placeholder="Ej: 175" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-blue">
+                    </div>
+                    <div>
+                        <label class="text-xs text-ios-gray block mb-1">Peso Inicial (kg):</label>
+                        <input type="number" step="0.1" id="prof-initweight-input" placeholder="Ej: 80" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-blue">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-ios-gray block mb-1">Peso Meta (kg):</label>
+                    <input type="number" step="0.1" id="prof-targetweight-input" placeholder="Ej: 72" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-ios-blue">
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeProfileModal()" class="flex-1 py-2.5 bg-zinc-800 text-xs font-bold text-ios-gray rounded-xl">Cancelar</button>
+                <button onclick="saveProfile()" class="flex-1 py-2.5 bg-ios-blue text-xs font-bold text-white rounded-xl shadow-md">Guardar Perfil</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration Modal -->
+    <div id="modal-celebration" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-ios-card border border-zinc-700 rounded-3xl p-6 max-w-xs w-full text-center space-y-4 shadow-2xl transform scale-95 transition-transform duration-300" id="modal-celebration-card">
+            <div class="w-16 h-16 bg-ios-green/20 border border-ios-green/40 rounded-full flex items-center justify-center mx-auto text-ios-green">
+                <i data-lucide="trophy" class="w-8 h-8 stroke-[2.5]"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-black text-white">¡Gran Trabajo!</h3>
+                <p class="text-xs text-ios-gray mt-1">Has completado tu sesión de entrenamiento con éxito.</p>
+            </div>
+            <div class="bg-zinc-900 p-3 rounded-2xl border border-zinc-800 text-left space-y-1.5 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-ios-gray">Sesión:</span>
+                    <span class="font-bold text-white" id="modal-summary-session">Sesión A</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ios-gray">Volumen Levantado:</span>
+                    <span class="font-bold text-ios-green" id="modal-summary-volume">0 kg</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-ios-gray">Series Completadas:</span>
+                    <span class="font-bold text-ios-blue" id="modal-summary-sets">0/9</span>
+                </div>
+            </div>
+            <button onclick="closeCelebrationModal()" class="w-full py-3 bg-ios-green text-black font-extrabold rounded-xl shadow-lg active:scale-95 transition-all">
+                ¡EXCELENTE!
+            </button>
+        </div>
+    </div>
+
+    <!-- Confirm Reset Modal -->
+    <div id="modal-reset" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-ios-card border border-zinc-700 rounded-3xl p-5 max-w-xs w-full space-y-4 shadow-2xl text-center">
+            <div class="w-12 h-12 bg-ios-red/20 text-ios-red rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-white">¿Reiniciar todos los datos?</h3>
+                <p class="text-xs text-ios-gray mt-1">Se borrarán tus pesajes, perfil e historial de entrenamientos. Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeResetModal()" class="flex-1 py-2.5 bg-zinc-800 text-xs font-bold text-ios-gray rounded-xl">Cancelar</button>
+                <button onclick="executeResetData()" class="flex-1 py-2.5 bg-ios-red text-xs font-bold text-white rounded-xl">Sí, Borrar Todo</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- APPLICATION JAVASCRIPT CORE LOGIC          -->
+    <!-- ========================================== -->
+    <script>
+        // Preset Workout Definitions (Tailored for 2x 7.5kg and 2x 4kg dumbbells)
+        const WORKOUT_DEFINITIONS = {
+            'A': {
+                title: 'Sesión A: Piernas y Empuje',
+                desc: 'Sentadilla Goblet (7.5kg), Press Pecho (7.5kg) y Peso Muerto (7.5kg)',
+                exercises: [
+                    { id: 'sentadilla', name: 'Sentadilla Goblet', sets: 3, targetReps: '10-12', defaultWeight: 7.5, rest: 90, tip: 'Sostén la mancuerna pegada al pecho verticalmente.' },
+                    { id: 'press_pecho', name: 'Press de Pecho en Suelo', sets: 3, targetReps: '10-12', defaultWeight: 7.5, rest: 75, tip: 'Baja controlado hasta rozar los tríceps con el suelo.' },
+                    { id: 'peso_muerto', name: 'Peso Muerto Rumano', sets: 3, targetReps: '10-12', defaultWeight: 7.5, rest: 90, tip: 'Lleva la cadera hacia atrás sintiendo tensión en isquios.' }
+                ]
+            },
+            'B': {
+                title: 'Sesión B: Espalda y Hombros',
+                desc: 'Remo Unilateral (7.5kg), Press Militar (4kg) y Zancadas (4/7.5kg)',
+                exercises: [
+                    { id: 'remo', name: 'Remo Unilateral con Mancuerna', sets: 3, targetReps: '10-12', defaultWeight: 7.5, rest: 75, tip: 'Tracciona el codo hacia atrás dirigiendo la pesa a tu cadera.' },
+                    { id: 'press_militar', name: 'Press Militar de Hombros', sets: 3, targetReps: '10-12', defaultWeight: 4.0, rest: 75, tip: 'Usa las de 4kg para cuidar la alineación de tus hombros.' },
+                    { id: 'zancadas', name: 'Zancadas Traseras con Mancuernas', sets: 3, targetReps: '10/pierna', defaultWeight: 4.0, rest: 90, tip: 'Empieza con 4kg para afianzar el equilibrio.' }
+                ]
+            }
+        };
+
+        // Application Global State
+        let appData = {
+            profile: {
+                name: "Atleta",
+                height: 175,
+                initialWeight: 80.0,
+                targetWeight: 72.0,
+                remindersEnabled: false
+            },
+            weightLogs: [
+                { id: '1', date: '2026-10-01', weight: 80.0, notes: 'Peso inicial' },
+                { id: '2', date: '2026-10-08', weight: 79.2, notes: 'Primera semana' },
+                { id: '3', date: '2026-10-15', weight: 78.4, notes: 'Constante en la rutina' }
+            ],
+            workouts: [],
+            currentSession: 'A',
+            activeWorkoutState: {}
+        };
+
+        // Timer Variables
+        let timerInterval = null;
+        let timerSecondsLeft = 0;
+        let isTimerRunning = false;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            updateCurrentDate();
+            initActiveWorkoutState();
+            renderWorkout();
+            updateProfileUI();
+            renderWeightLogs();
+            renderHistory();
+            checkNotificationStatus();
+            lucide.createIcons();
+        });
+
+        function updateCurrentDate() {
+            const options = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
+            const today = new Date().toLocaleDateString('es-ES', options);
+            document.getElementById('current-date-display').textContent = today;
+
+            // Set default date picker to today
+            const isoToday = new Date().toISOString().split('T')[0];
+            document.getElementById('weight-input-date').value = isoToday;
+        }
+
+        // Storage Management
+        function loadFromStorage() {
+            const saved = localStorage.getItem('fitdumbbell_v2_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.profile) appData.profile = parsed.profile;
+                    if (parsed.weightLogs) appData.weightLogs = parsed.weightLogs;
+                    if (parsed.workouts) appData.workouts = parsed.workouts;
+                    if (parsed.currentSession) appData.currentSession = parsed.currentSession;
+                } catch (e) {
+                    console.error("Error al cargar localStorage", e);
+                }
+            }
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('fitdumbbell_v2_data', JSON.stringify(appData));
+        }
+
+        // Navigation Switcher
+        function switchTab(tabName) {
+            document.getElementById('tab-workout').classList.add('hidden');
+            document.getElementById('tab-progress').classList.add('hidden');
+            document.getElementById('tab-history').classList.add('hidden');
+
+            document.getElementById('tab-btn-workout').className = "flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all";
+            document.getElementById('tab-btn-progress').className = "flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all";
+            document.getElementById('tab-btn-history').className = "flex flex-col items-center space-y-1 text-ios-gray hover:text-white transition-all";
+
+            if (tabName === 'workout') {
+                document.getElementById('tab-workout').classList.remove('hidden');
+                document.getElementById('tab-btn-workout').className = "flex flex-col items-center space-y-1 text-ios-green transition-all";
+            } else if (tabName === 'progress') {
+                document.getElementById('tab-progress').classList.remove('hidden');
+                document.getElementById('tab-btn-progress').className = "flex flex-col items-center space-y-1 text-ios-green transition-all";
+                renderWeightLogs();
+            } else if (tabName === 'history') {
+                document.getElementById('tab-history').classList.remove('hidden');
+                document.getElementById('tab-btn-history').className = "flex flex-col items-center space-y-1 text-ios-green transition-all";
+                renderHistory();
+            }
+            lucide.createIcons();
+        }
+
+        // Profile Management
+        function openProfileModal() {
+            document.getElementById('prof-name-input').value = appData.profile.name || '';
+            document.getElementById('prof-height-input').value = appData.profile.height || '';
+            document.getElementById('prof-initweight-input').value = appData.profile.initialWeight || '';
+            document.getElementById('prof-targetweight-input').value = appData.profile.targetWeight || '';
+
+            document.getElementById('modal-profile').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('modal-profile').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function saveProfile() {
+            const name = document.getElementById('prof-name-input').value.trim() || 'Atleta';
+            const height = parseFloat(document.getElementById('prof-height-input').value) || 170;
+            const initWeight = parseFloat(document.getElementById('prof-initweight-input').value) || 75;
+            const targetWeight = parseFloat(document.getElementById('prof-targetweight-input').value) || 70;
+
+            appData.profile.name = name;
+            appData.profile.height = height;
+            appData.profile.initialWeight = initWeight;
+            appData.profile.targetWeight = targetWeight;
+
+            saveToStorage();
+            updateProfileUI();
+            renderWeightLogs();
+            closeProfileModal();
+            showToast('Perfil actualizado correctamente', 'user-check');
+        }
+
+        function updateProfileUI() {
+            const prof = appData.profile;
+            const initials = prof.name ? prof.name.substring(0,2).toUpperCase() : 'AT';
+
+            document.getElementById('header-avatar-text').textContent = initials;
+            document.getElementById('header-user-name').textContent = `Hola, ${prof.name}`;
+            document.getElementById('banner-user-name').textContent = prof.name;
+            document.getElementById('banner-user-details').textContent = `Estatura: ${prof.height} cm • Peso Inicial: ${prof.initialWeight} kg`;
+
+            // Calculate KPIs
+            const latestWeightLog = appData.weightLogs.length > 0 ? appData.weightLogs[0].weight : prof.initialWeight;
+            document.getElementById('kpi-current-weight').textContent = `${latestWeightLog.toFixed(1)} kg`;
+
+            const diffFromInit = (latestWeightLog - prof.initialWeight).toFixed(1);
+            const diffSign = diffFromInit > 0 ? `+${diffFromInit}` : diffFromInit;
+            document.getElementById('kpi-weight-change').textContent = `${diffSign} kg vs inicio`;
+
+            document.getElementById('kpi-target-weight').textContent = `${prof.targetWeight.toFixed(1)} kg`;
+
+            // Target Progress %
+            const totalToLoseGain = Math.abs(prof.initialWeight - prof.targetWeight);
+            const currentAchieved = Math.abs(prof.initialWeight - latestWeightLog);
+            let progressPct = totalToLoseGain > 0 ? Math.min(100, Math.round((currentAchieved / totalToLoseGain) * 100)) : 100;
+            if (isNaN(progressPct)) progressPct = 0;
+            document.getElementById('kpi-target-progress').textContent = `${progressPct}% meta`;
+
+            // BMI Calculation
+            const heightInMeters = prof.height / 100;
+            if (heightInMeters > 0) {
+                const bmi = (latestWeightLog / (heightInMeters * heightInMeters)).toFixed(1);
+                document.getElementById('kpi-bmi-val').textContent = bmi;
+
+                let status = 'Normal';
+                let colorClass = 'text-ios-green';
+                if (bmi < 18.5) { status = 'Bajo peso'; colorClass = 'text-ios-blue'; }
+                else if (bmi >= 25 && bmi < 29.9) { status = 'Sobrepeso'; colorClass = 'text-ios-orange'; }
+                else if (bmi >= 30) { status = 'Obesidad'; colorClass = 'text-ios-red'; }
+
+                const statusEl = document.getElementById('kpi-bmi-status');
+                statusEl.textContent = status;
+                statusEl.className = `text-[9px] font-bold block ${colorClass}`;
+            }
+        }
+
+        // Session Selector logic
+        function selectSession(sessionKey) {
+            appData.currentSession = sessionKey;
+            
+            const btnA = document.getElementById('btn-session-a');
+            const btnB = document.getElementById('btn-session-b');
+
+            if (sessionKey === 'A') {
+                btnA.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 bg-ios-blue text-white shadow-lg";
+                btnB.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 text-ios-gray hover:text-white";
+            } else {
+                btnB.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 bg-ios-blue text-white shadow-lg";
+                btnA.className = "flex-1 py-2.5 text-xs font-bold rounded-xl transition-all duration-200 text-center flex items-center justify-center space-x-1.5 text-ios-gray hover:text-white";
+            }
+
+            initActiveWorkoutState();
+            renderWorkout();
+            saveToStorage();
+        }
+
+        function initActiveWorkoutState() {
+            const currentDef = WORKOUT_DEFINITIONS[appData.currentSession];
+            appData.activeWorkoutState = {
+                sessionKey: appData.currentSession,
+                exercises: {}
+            };
+
+            currentDef.exercises.forEach(ex => {
+                let lastWeight = ex.defaultWeight;
+                for (let i = appData.workouts.length - 1; i >= 0; i--) {
+                    const found = appData.workouts[i].exercises.find(e => e.name === ex.name);
+                    if (found && found.sets && found.sets.length > 0) {
+                        lastWeight = found.sets[0].weight || ex.defaultWeight;
+                        break;
+                    }
+                }
+
+                appData.activeWorkoutState.exercises[ex.id] = {
+                    name: ex.name,
+                    sets: Array.from({ length: ex.sets }, () => ({
+                        weight: lastWeight,
+                        reps: parseInt(ex.targetReps) || 10,
+                        completed: false
+                    }))
+                };
+            });
+        }
+
+        function renderWorkout() {
+            const def = WORKOUT_DEFINITIONS[appData.currentSession];
+            document.getElementById('session-title').textContent = def.title;
+            document.getElementById('session-desc').textContent = def.desc;
+
+            const container = document.getElementById('exercises-list');
+            container.innerHTML = '';
+
+            let totalCompletedSets = 0;
+            let totalSetsCount = 0;
+
+            def.exercises.forEach((ex) => {
+                const exState = appData.activeWorkoutState.exercises[ex.id];
+                totalSetsCount += ex.sets;
+
+                const card = document.createElement('div');
+                card.className = "bg-ios-card rounded-2xl p-4 border border-zinc-800/80 shadow-md space-y-3";
+
+                let setsHtml = '';
+                exState.sets.forEach((st, setIdx) => {
+                    if (st.completed) totalCompletedSets++;
+
+                    setsHtml += `
+                        <div class="flex items-center justify-between bg-zinc-900/90 p-2 rounded-xl border ${st.completed ? 'border-ios-green/40 bg-ios-green/5' : 'border-zinc-800'} transition-all">
+                            <span class="text-xs font-bold text-ios-gray w-12">Serie ${setIdx + 1}</span>
+                            
+                            <div class="flex items-center space-x-3">
+                                <div class="flex items-center space-x-1">
+                                    <input type="number" step="0.5" value="${st.weight}" onchange="updateSetInput('${ex.id}', ${setIdx}, 'weight', this.value)" class="w-14 bg-zinc-950 border border-zinc-800 rounded-lg py-1 px-1.5 text-center text-xs font-bold text-white focus:border-ios-blue focus:outline-none">
+                                    <span class="text-[10px] text-ios-gray font-medium">kg</span>
+                                </div>
+
+                                <div class="flex items-center space-x-1">
+                                    <input type="number" value="${st.reps}" onchange="updateSetInput('${ex.id}', ${setIdx}, 'reps', this.value)" class="w-12 bg-zinc-950 border border-zinc-800 rounded-lg py-1 px-1.5 text-center text-xs font-bold text-white focus:border-ios-blue focus:outline-none">
+                                    <span class="text-[10px] text-ios-gray font-medium">reps</span>
+                                </div>
+                            </div>
+
+                            <button onclick="toggleSetComplete('${ex.id}', ${setIdx}, ${ex.rest})" class="w-8 h-8 rounded-xl flex items-center justify-center transition-all ${st.completed ? 'bg-ios-green text-black font-extrabold shadow-md scale-105' : 'bg-zinc-800 text-ios-gray hover:text-white'}">
+                                <i data-lucide="check" class="w-4 h-4 stroke-[3]"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center">
+                                <span class="w-2 h-2 rounded-full bg-ios-blue mr-2"></span>
+                                ${ex.name}
+                            </h3>
+                            <p class="text-[11px] text-ios-gray mt-0.5">
+                                Meta: ${ex.sets} series x ${ex.targetReps} reps • Descanso: ${ex.rest}s
+                            </p>
+                        </div>
+                        <span class="text-[10px] font-semibold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-md border border-ios-blue/20">
+                            Pesa: ${ex.defaultWeight} kg
+                        </span>
+                    </div>
+
+                    ${ex.tip ? `<p class="text-[11px] text-zinc-400 bg-zinc-900/60 p-2 rounded-xl border border-zinc-800/60 italic flex items-center"><i data-lucide="lightbulb" class="w-3.5 h-3.5 mr-1.5 text-ios-orange flex-shrink-0"></i>${ex.tip}</p>` : ''}
+
+                    <div class="space-y-2 pt-1">
+                        ${setsHtml}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            document.getElementById('completed-sets-counter').textContent = `${totalCompletedSets}/${totalSetsCount} Series`;
+            lucide.createIcons();
+        }
+
+        function updateSetInput(exId, setIdx, field, val) {
+            if (appData.activeWorkoutState.exercises[exId]) {
+                appData.activeWorkoutState.exercises[exId].sets[setIdx][field] = parseFloat(val) || 0;
+            }
+        }
+
+        function toggleSetComplete(exId, setIdx, restSeconds) {
+            const setObj = appData.activeWorkoutState.exercises[exId].sets[setIdx];
+            setObj.completed = !setObj.completed;
+
+            if (setObj.completed) {
+                showToast(`Serie ${setIdx + 1} completada ✓`, 'check-circle-2');
+                setTimerSeconds(restSeconds);
+                startTimer();
+            }
+
+            renderWorkout();
+        }
+
+        // Rest Timer Controls
+        function toggleQuickTimer() {
+            const bar = document.getElementById('rest-timer-bar');
+            if (bar.classList.contains('pointer-events-none')) {
+                bar.classList.remove('transform', 'translate-y-32', 'opacity-0', 'pointer-events-none');
+            } else {
+                bar.classList.add('transform', 'translate-y-32', 'opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function closeQuickTimer() {
+            document.getElementById('rest-timer-bar').classList.add('transform', 'translate-y-32', 'opacity-0', 'pointer-events-none');
+        }
+
+        function setTimerSeconds(sec) {
+            timerSecondsLeft = sec;
+            updateTimerDisplay();
+            document.getElementById('rest-timer-bar').classList.remove('transform', 'translate-y-32', 'opacity-0', 'pointer-events-none');
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSecondsLeft / 60);
+            const secs = timerSecondsLeft % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            document.getElementById('timer-countdown-display').textContent = formatted;
+            document.getElementById('header-timer-text').textContent = timerSecondsLeft > 0 ? formatted : 'Timer';
+        }
+
+        function toggleTimerPlay() {
+            if (isTimerRunning) {
+                pauseTimer();
+            } else {
+                if (timerSecondsLeft <= 0) timerSecondsLeft = 75;
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = true;
+            document.getElementById('timer-ring').classList.add('timer-active');
+            document.getElementById('timer-play-btn').innerHTML = `<i data-lucide="pause" class="w-4 h-4 stroke-[3]"></i>`;
+            lucide.createIcons();
+
+            timerInterval = setInterval(() => {
+                if (timerSecondsLeft > 0) {
+                    timerSecondsLeft--;
+                    updateTimerDisplay();
+                } else {
+                    pauseTimer();
+                    playTimerBeep();
+                    showToast('¡Tiempo de descanso finalizado!', 'bell');
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('timer-ring').classList.remove('timer-active');
+            document.getElementById('timer-play-btn').innerHTML = `<i data-lucide="play" class="w-4 h-4 stroke-[3]"></i>`;
+            lucide.createIcons();
+        }
+
+        function playTimerBeep() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.8);
+            } catch (e) {
+                console.log("Audio API unlock", e);
+            }
+        }
+
+        // Finish Workout Logic
+        function finishWorkout() {
+            const currentDef = WORKOUT_DEFINITIONS[appData.currentSession];
+            let totalVolume = 0;
+            let totalSetsCompleted = 0;
+            let savedExercises = [];
+
+            Object.keys(appData.activeWorkoutState.exercises).forEach(exId => {
+                const ex = appData.activeWorkoutState.exercises[exId];
+                const completedSets = ex.sets.filter(s => s.completed);
+
+                completedSets.forEach(s => {
+                    totalVolume += (s.weight * s.reps);
+                    totalSetsCompleted++;
+                });
+
+                savedExercises.push({
+                    id: exId,
+                    name: ex.name,
+                    sets: completedSets
+                });
+            });
+
+            if (totalSetsCompleted === 0) {
+                showToast('Marca al menos 1 serie completada antes de guardar', 'alert-circle');
+                return;
+            }
+
+            const notes = document.getElementById('workout-notes').value.trim();
+
+            const workoutLog = {
+                id: Date.now().toString(),
+                date: new Date().toISOString(),
+                sessionKey: appData.currentSession,
+                sessionTitle: currentDef.title,
+                totalVolume: totalVolume,
+                setsCompleted: totalSetsCompleted,
+                exercises: savedExercises,
+                notes: notes
+            };
+
+            appData.workouts.unshift(workoutLog);
+            saveToStorage();
+
+            document.getElementById('modal-summary-session').textContent = currentDef.title;
+            document.getElementById('modal-summary-volume').textContent = `${totalVolume.toLocaleString('es-ES')} kg`;
+            document.getElementById('modal-summary-sets').textContent = `${totalSetsCompleted} series`;
+
+            openCelebrationModal();
+
+            if (window.confetti) {
+                confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+            }
+
+            document.getElementById('workout-notes').value = '';
+            initActiveWorkoutState();
+            renderWorkout();
+        }
+
+        // Weight Logging & Chart Rendering
+        function addWeightLog() {
+            const dateVal = document.getElementById('weight-input-date').value;
+            const weightVal = parseFloat(document.getElementById('weight-input-val').value);
+            const notesVal = document.getElementById('weight-input-notes').value.trim();
+
+            if (!weightVal || weightVal <= 0) {
+                showToast('Ingresa un peso válido', 'alert-circle');
+                return;
+            }
+
+            const newLog = {
+                id: Date.now().toString(),
+                date: dateVal || new Date().toISOString().split('T')[0],
+                weight: weightVal,
+                notes: notesVal
+            };
+
+            appData.weightLogs.unshift(newLog);
+            // Sort by date descending
+            appData.weightLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            saveToStorage();
+            updateProfileUI();
+            renderWeightLogs();
+
+            document.getElementById('weight-input-val').value = '';
+            document.getElementById('weight-input-notes').value = '';
+
+            showToast('Pesaje registrado con éxito', 'check');
+        }
+
+        function deleteWeightLog(id) {
+            appData.weightLogs = appData.weightLogs.filter(w => w.id !== id);
+            saveToStorage();
+            updateProfileUI();
+            renderWeightLogs();
+            showToast('Pesaje eliminado', 'trash');
+        }
+
+        function renderWeightLogs() {
+            const container = document.getElementById('weight-history-list');
+            container.innerHTML = '';
+
+            if (appData.weightLogs.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-ios-card rounded-xl p-4 text-center border border-zinc-800">
+                        <p class="text-xs text-ios-gray">Aún no has registrado pesajes semanales.</p>
+                    </div>
+                `;
+            } else {
+                appData.weightLogs.forEach((log) => {
+                    const dateObj = new Date(log.date + 'T00:00:00');
+                    const formattedDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                    const item = document.createElement('div');
+                    item.className = "bg-ios-card rounded-xl p-3 border border-zinc-800/80 flex items-center justify-between";
+                    item.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl bg-ios-green/10 border border-ios-green/30 flex items-center justify-center text-ios-green font-black text-xs">
+                                ${log.weight}
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">${log.weight} kg</div>
+                                <div class="text-[10px] text-ios-gray">${formattedDate} ${log.notes ? '• ' + log.notes : ''}</div>
+                            </div>
+                        </div>
+                        <button onclick="deleteWeightLog('${log.id}')" class="text-ios-gray hover:text-ios-red p-1 transition-colors">
+                            <i data-lucide="trash" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            renderWeightChart();
+            lucide.createIcons();
+        }
+
+        function renderWeightChart() {
+            const canvas = document.getElementById('weightChartCanvas');
+            const emptyMsg = document.getElementById('weight-chart-empty-msg');
+
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            const sortedLogs = [...appData.weightLogs].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (sortedLogs.length < 2) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            } else {
+                emptyMsg.classList.add('hidden');
+            }
+
+            const padding = 35;
+            const width = canvas.width - (padding * 2);
+            const height = canvas.height - (padding * 2);
+
+            const weights = sortedLogs.map(p => p.weight);
+            const targetW = appData.profile.targetWeight || weights[0];
+            
+            const allVals = [...weights, targetW];
+            const minW = Math.min(...allVals) - 1;
+            const maxW = Math.max(...allVals) + 1;
+
+            // Draw Target Line (Dashed Orange Line)
+            const targetY = canvas.height - padding - ((targetW - minW) / (maxW - minW || 1)) * height;
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#FF9F0A';
+            ctx.lineWidth = 1.5;
+            ctx.moveTo(padding, targetY);
+            ctx.lineTo(canvas.width - padding, targetY);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+
+            // Label for target line
+            ctx.fillStyle = '#FF9F0A';
+            ctx.font = '10px -apple-system, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Meta ${targetW}kg`, canvas.width - padding, targetY - 4);
+
+            // Draw actual weight line (Green)
+            ctx.beginPath();
+            ctx.strokeStyle = '#30D158';
+            ctx.lineWidth = 3;
+
+            sortedLogs.forEach((pt, idx) => {
+                const x = padding + (idx / (sortedLogs.length - 1)) * width;
+                const y = canvas.height - padding - ((pt.weight - minW) / (maxW - minW || 1)) * height;
+
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Draw data points
+            sortedLogs.forEach((pt, idx) => {
+                const x = padding + (idx / (sortedLogs.length - 1)) * width;
+                const y = canvas.height - padding - ((pt.weight - minW) / (maxW - minW || 1)) * height;
+
+                ctx.beginPath();
+                ctx.fillStyle = '#0A84FF';
+                ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                const d = new Date(pt.date + 'T00:00:00');
+                const labelDate = `${d.getDate()}/${d.getMonth()+1}`;
+
+                ctx.fillStyle = '#8E8E93';
+                ctx.font = '9px -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${pt.weight}k`, x, y - 7);
+                ctx.fillText(labelDate, x, canvas.height - 8);
+            });
+        }
+
+        // Notifications API Integration
+        function checkNotificationStatus() {
+            const badge = document.getElementById('notif-status-badge');
+            if (!("Notification" in window)) {
+                badge.textContent = "No Soportado";
+                badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-ios-gray border border-zinc-700";
+                return;
+            }
+
+            if (Notification.permission === "granted") {
+                badge.textContent = "Activo ✓";
+                badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-ios-green/10 text-ios-green border border-ios-green/30";
+                document.getElementById('btn-request-notif').classList.add('hidden');
+            } else {
+                badge.textContent = "Inactivo";
+                badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-800 text-ios-gray border border-zinc-700";
+                document.getElementById('btn-request-notif').classList.remove('hidden');
+            }
+        }
+
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                showToast("Tu navegador no soporta notificaciones", "alert-triangle");
+                return;
+            }
+
+            Notification.requestPermission().then(permission => {
+                checkNotificationStatus();
+                if (permission === "granted") {
+                    showToast("¡Recordatorios activados correctamente!", "check-circle");
+                    // Test notification
+                    new Notification("FitDumbbell", {
+                        body: "¡Recordatorios de pesaje y rutinas activados para tu iPhone!",
+                        icon: "https://img.icons8.com/isometric/180/dumbbell.png"
+                    });
+                } else {
+                    showToast("Permiso de notificaciones denegado", "alert-circle");
+                }
+            });
+        }
+
+        // Render Workout History
+        function renderHistory() {
+            const totalWorkouts = appData.workouts.length;
+            let totalVolume = 0;
+
+            appData.workouts.forEach(w => {
+                totalVolume += (w.totalVolume || 0);
+            });
+
+            document.getElementById('stat-total-workouts').textContent = totalWorkouts;
+            document.getElementById('stat-total-volume').textContent = `${totalVolume.toLocaleString('es-ES')} kg`;
+            document.getElementById('stat-streak').textContent = `${calculateUniqueDays()}`;
+
+            const container = document.getElementById('workout-history-list');
+            document.getElementById('logs-count').textContent = `${totalWorkouts} registros`;
+            container.innerHTML = '';
+
+            if (totalWorkouts === 0) {
+                container.innerHTML = `
+                    <div class="bg-ios-card rounded-2xl p-6 text-center border border-zinc-800/80">
+                        <i data-lucide="clipboard-list" class="w-8 h-8 mx-auto text-ios-gray mb-2"></i>
+                        <p class="text-xs text-ios-gray">Aún no has registrado ningún entrenamiento.</p>
+                        <p class="text-[10px] text-zinc-500 mt-1">Completa tu primera sesión en la pestaña "Entrenar".</p>
+                    </div>
+                `;
+            } else {
+                appData.workouts.forEach(log => {
+                    const dateObj = new Date(log.date);
+                    const formattedDate = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                    const formattedTime = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+                    const card = document.createElement('div');
+                    card.className = "bg-ios-card rounded-2xl p-4 border border-zinc-800/80 space-y-3";
+
+                    let exDetailsHtml = '';
+                    log.exercises.forEach(ex => {
+                        const setSummary = ex.sets.map(s => `${s.weight}kg × ${s.reps}`).join(', ');
+                        exDetailsHtml += `
+                            <div class="text-xs border-b border-zinc-800/50 pb-1.5 last:border-0 last:pb-0">
+                                <div class="font-semibold text-white">${ex.name}</div>
+                                <div class="text-[11px] text-ios-gray mt-0.5">${setSummary || 'Sin series'}</div>
+                            </div>
+                        `;
+                    });
+
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] uppercase font-bold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-full border border-ios-blue/20">
+                                    ${log.sessionTitle}
+                                </span>
+                                <div class="text-xs text-ios-gray mt-1">${formattedDate} • ${formattedTime}</div>
+                            </div>
+                            <button onclick="deleteWorkoutLog('${log.id}')" class="text-ios-gray hover:text-ios-red p-1 transition-colors">
+                                <i data-lucide="trash" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div class="bg-zinc-900/90 rounded-xl p-3 border border-zinc-800/80 space-y-2">
+                            ${exDetailsHtml}
+                        </div>
+
+                        ${log.notes ? `<p class="text-xs text-ios-gray italic bg-zinc-950 p-2 rounded-lg">"${log.notes}"</p>` : ''}
+
+                        <div class="flex justify-between items-center text-[11px] text-ios-gray pt-1 border-t border-zinc-800/50">
+                            <span>Volumen: <strong class="text-ios-green">${log.totalVolume} kg</strong></span>
+                            <span>Series: <strong class="text-white">${log.setsCompleted}</strong></span>
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+            }
+
+            lucide.createIcons();
+        }
+
+        function calculateUniqueDays() {
+            if (appData.workouts.length === 0) return 0;
+            const dates = appData.workouts.map(w => new Date(w.date).toDateString());
+            return [...new Set(dates)].length;
+        }
+
+        function deleteWorkoutLog(id) {
+            appData.workouts = appData.workouts.filter(w => w.id !== id);
+            saveToStorage();
+            renderHistory();
+            showToast('Registro eliminado', 'trash');
+        }
+
+        // Backup and Reset Utilities
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `fitdumbbell_backup_${new Date().toISOString().slice(0,10)}.json`);
+            dlAnchorElem.click();
+            showToast('Copia JSON descargada', 'download');
+        }
+
+        function triggerImportJSON() {
+            document.getElementById('import-file-input').click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.profile && imported.workouts) {
+                        appData = imported;
+                        saveToStorage();
+                        renderWorkout();
+                        updateProfileUI();
+                        renderWeightLogs();
+                        renderHistory();
+                        showToast('Datos importados con éxito', 'check');
+                    } else {
+                        showToast('Formato JSON no válido', 'alert-circle');
+                    }
+                } catch (err) {
+                    showToast('Error al leer el archivo JSON', 'alert-circle');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmResetData() {
+            document.getElementById('modal-reset').classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeResetModal() {
+            document.getElementById('modal-reset').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function executeResetData() {
+            localStorage.removeItem('fitdumbbell_v2_data');
+            appData = {
+                profile: { name: "Atleta", height: 175, initialWeight: 80.0, targetWeight: 72.0, remindersEnabled: false },
+                weightLogs: [],
+                workouts: [],
+                currentSession: 'A',
+                activeWorkoutState: {}
+            };
+            initActiveWorkoutState();
+            renderWorkout();
+            updateProfileUI();
+            renderWeightLogs();
+            renderHistory();
+            closeResetModal();
+            showToast('Todos los datos han sido borrados', 'trash-2');
+        }
+
+        // Modals & Toast Handlers
+        function openCelebrationModal() {
+            const modal = document.getElementById('modal-celebration');
+            const card = document.getElementById('modal-celebration-card');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closeCelebrationModal() {
+            const modal = document.getElementById('modal-celebration');
+            const card = document.getElementById('modal-celebration-card');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            switchTab('history');
+        }
+
+        function showToast(message, iconName = 'info') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            document.getElementById('toast-icon').setAttribute('data-lucide', iconName);
+            lucide.createIcons();
+
+            toast.classList.remove('opacity-0', '-translate-y-5', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-5', 'pointer-events-none');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
