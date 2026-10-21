@@ -11,6 +11,9 @@
   <meta name="apple-mobile-web-app-title" content="Mi Rutina">
   <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/192/dumb-bell-emoji.png">
 
+  <!-- Chart.js CDN para el gráfico de peso -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     :root {
       --bg-color: #0F172A;
@@ -21,6 +24,7 @@
       --text-muted: #94A3B8;
       --border-color: #334155;
       --success-color: #22C55E;
+      --danger-color: #EF4444;
       --radius: 16px;
     }
 
@@ -127,12 +131,17 @@
       background: var(--accent-hover);
     }
 
+    .btn-success {
+      background: var(--success-color);
+      color: #0F172A;
+    }
+
     /* Header Principal */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border-color);
     }
@@ -163,34 +172,69 @@
     /* Tarjetas de Estadísticas */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
     }
 
     .stat-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 12px 8px;
+      padding: 10px 4px;
       text-align: center;
     }
 
     .stat-val {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--accent-color);
     }
 
     .stat-lbl {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
       margin-top: 4px;
     }
 
+    /* Barra de Progreso */
+    .progress-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar-bg {
+      background: #0F172A;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .progress-bar-fill {
+      background: linear-gradient(90deg, var(--accent-color), var(--success-color));
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
     /* Selector de Pestañas */
     .tab-buttons {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
       background: var(--card-bg);
       border-radius: 12px;
       padding: 4px;
@@ -199,15 +243,15 @@
     }
 
     .tab-btn {
-      flex: 1;
-      padding: 10px;
+      padding: 10px 2px;
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 0.9rem;
+      font-size: 0.75rem;
       font-weight: 600;
       border-radius: 8px;
       cursor: pointer;
+      text-align: center;
       transition: all 0.2s;
     }
 
@@ -287,7 +331,7 @@
       font-weight: 700;
     }
 
-    /* Secciones adicionales */
+    /* Secciones e Historial */
     .section-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -302,9 +346,58 @@
       margin-bottom: 14px;
     }
 
+    .chart-container {
+      position: relative;
+      height: 200px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .history-card {
+      background: #0F172A;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .history-title {
+      font-weight: 700;
+      color: var(--accent-color);
+      font-size: 0.95rem;
+    }
+
+    .history-date {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .history-body {
+      font-size: 0.85rem;
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    .btn-delete {
+      background: transparent;
+      border: none;
+      color: var(--danger-color);
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
     .weight-log-item {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       padding: 10px 0;
       border-bottom: 1px solid var(--border-color);
       font-size: 0.9rem;
@@ -314,7 +407,22 @@
       border-bottom: none;
     }
 
-    /* Ocultar elementos */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--success-color);
+      color: #0F172A;
+      padding: 12px 20px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+      z-index: 2000;
+      transition: opacity 0.3s;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -338,7 +446,7 @@
           <input type="number" id="inputHeight" placeholder="Ej: 175" required>
         </div>
         <div class="form-group">
-          <label for="inputWeightInit">Peso Actual (kg):</label>
+          <label for="inputWeightInit">Peso Inicial (kg):</label>
           <input type="number" step="0.1" id="inputWeightInit" placeholder="Ej: 78.5" required>
         </div>
         <div class="form-group">
@@ -355,7 +463,7 @@
     <header>
       <div>
         <div class="user-greeting" id="displayGreeting">¡Hola! 👋</div>
-        <div class="user-sub" id="displaySub">Plan Mancuernas 4kg & 7.5kg</div>
+        <div class="user-sub" id="displaySub">Mancuernas 4kg & 7.5kg</div>
       </div>
       <button class="btn-edit-profile" onclick="openProfileModal()">Editar Perfil</button>
     </header>
@@ -364,7 +472,7 @@
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-val" id="statCurrentWeight">-- kg</div>
-        <div class="stat-lbl">Peso Actual</div>
+        <div class="stat-lbl">Actual</div>
       </div>
       <div class="stat-card">
         <div class="stat-val" id="statBMI">--</div>
@@ -374,18 +482,34 @@
         <div class="stat-val" id="statGoal">-- kg</div>
         <div class="stat-lbl">Meta</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statWorkoutsCount">0</div>
+        <div class="stat-lbl">Sesiones</div>
+      </div>
     </div>
 
-    <!-- PESTAÑAS DE RUTINA -->
+    <!-- BARRA DE PROGRESO HACIA META -->
+    <div class="progress-card">
+      <div class="progress-header">
+        <span>Progreso hacia tu Meta</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="progressBarFill" class="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- PESTAÑAS DE NAVEGACIÓN -->
     <div class="tab-buttons">
-      <button class="tab-btn active" onclick="switchTab('tabA')">Sesión A (Piernas/Empuje)</button>
-      <button class="tab-btn" onclick="switchTab('tabB')">Sesión B (Espalda/Hombros)</button>
-      <button class="tab-btn" onclick="switchTab('tabWeight')">Mi Peso</button>
+      <button class="tab-btn active" onclick="switchTab('tabA', this)">Sesión A</button>
+      <button class="tab-btn" onclick="switchTab('tabB', this)">Sesión B</button>
+      <button class="tab-btn" onclick="switchTab('tabWeight', this)">Evolución Peso</button>
+      <button class="tab-btn" onclick="switchTab('tabHistory', this)">Historial</button>
     </div>
 
     <!-- SESIÓN A -->
     <div id="tabA" class="tab-content active">
-      <div class="exercise-card">
+      <div class="exercise-card" data-ex="Sentadilla Goblet (7.5 kg)">
         <div class="ex-header">
           <div class="ex-title">1. Sentadilla Goblet</div>
           <div class="ex-badge">7.5 kg</div>
@@ -398,7 +522,7 @@
         </div>
       </div>
 
-      <div class="exercise-card">
+      <div class="exercise-card" data-ex="Press de Pecho en Suelo (7.5 kg)">
         <div class="ex-header">
           <div class="ex-title">2. Press de Pecho en Suelo</div>
           <div class="ex-badge">7.5 kg</div>
@@ -411,7 +535,7 @@
         </div>
       </div>
 
-      <div class="exercise-card">
+      <div class="exercise-card" data-ex="Peso Muerto Rumano (7.5 kg x2)">
         <div class="ex-header">
           <div class="ex-title">3. Peso Muerto Rumano</div>
           <div class="ex-badge">7.5 kg (x2)</div>
@@ -423,11 +547,15 @@
           <div class="set-box" onclick="toggleSet(this)">Serie 3</div>
         </div>
       </div>
+
+      <button class="btn-primary btn-success" onclick="finishWorkout('Sesión A (Piernas & Empuje)', 'tabA')">
+        ✓ Finalizar y Registrar Sesión A
+      </button>
     </div>
 
     <!-- SESIÓN B -->
     <div id="tabB" class="tab-content">
-      <div class="exercise-card">
+      <div class="exercise-card" data-ex="Remo Unilateral (7.5 kg)">
         <div class="ex-header">
           <div class="ex-title">1. Remo Unilateral</div>
           <div class="ex-badge">7.5 kg</div>
@@ -440,7 +568,7 @@
         </div>
       </div>
 
-      <div class="exercise-card">
+      <div class="exercise-card" data-ex="Press Militar Hombros (4 kg x2)">
         <div class="ex-header">
           <div class="ex-title">2. Press Militar Hombros</div>
           <div class="ex-badge">4 kg (x2)</div>
@@ -453,7 +581,7 @@
         </div>
       </div>
 
-      <div class="exercise-card">
+      <div class="exercise-card" data-ex="Zancadas Traseras (4kg/7.5kg)">
         <div class="ex-header">
           <div class="ex-title">3. Zancadas Traseras</div>
           <div class="ex-badge">4 kg o 7.5 kg</div>
@@ -465,12 +593,23 @@
           <div class="set-box" onclick="toggleSet(this)">Serie 3</div>
         </div>
       </div>
+
+      <button class="btn-primary btn-success" onclick="finishWorkout('Sesión B (Espalda & Hombros)', 'tabB')">
+        ✓ Finalizar y Registrar Sesión B
+      </button>
     </div>
 
-    <!-- PESTAÑA REGISTRO DE PESO -->
+    <!-- EVOLUCIÓN Y REGISTRO DE PESO -->
     <div id="tabWeight" class="tab-content">
       <div class="section-card">
-        <div class="section-title">Registrar Peso Semanal</div>
+        <div class="section-title">Evolución Semanal</div>
+        <div class="chart-container">
+          <canvas id="weightChart"></canvas>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">Registrar Nuevo Pesaje</div>
         <form id="weightLogForm" style="display: flex; gap: 10px;">
           <input type="number" step="0.1" id="newWeightInput" placeholder="Peso en kg (Ej: 77.2)" required style="flex:1; padding: 12px; background:#0F172A; border:1px solid var(--border-color); border-radius:10px; color:#fff;">
           <button type="submit" class="btn-primary" style="width: auto; margin-top:0; padding: 12px 18px;">Añadir</button>
@@ -484,20 +623,33 @@
         </div>
       </div>
     </div>
+
+    <!-- HISTORIAL DE ENTRENAMIENTOS -->
+    <div id="tabHistory" class="tab-content">
+      <div class="section-card">
+        <div class="section-title">Historial de Entrenamientos</div>
+        <div id="workoutLogContainer">
+          <!-- Se llena dinámicamente -->
+        </div>
+      </div>
+    </div>
   </div>
+
+  <div id="toast" class="toast hidden">¡Entrenamiento registrado! 🔥</div>
 
   <script>
     // Variables globales
     let profile = null;
     let weightHistory = [];
+    let workoutHistory = [];
+    let myChart = null;
 
-    // Al cargar la página
     document.addEventListener('DOMContentLoaded', () => {
       loadProfile();
       loadWeightHistory();
+      loadWorkoutHistory();
     });
 
-    // Cargar Perfil
     function loadProfile() {
       const savedProfile = localStorage.getItem('rutina_profile');
       if (savedProfile) {
@@ -509,7 +661,6 @@
       }
     }
 
-    // Guardar Perfil desde Formulario
     document.getElementById('profileForm').addEventListener('submit', (e) => {
       e.preventDefault();
       
@@ -521,7 +672,6 @@
       profile = { name, height, weightInit, weightTarget };
       localStorage.setItem('rutina_profile', JSON.stringify(profile));
 
-      // Si no hay historial de peso, iniciar con el peso inicial
       if (weightHistory.length === 0) {
         weightHistory.push({
           date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
@@ -532,17 +682,16 @@
 
       renderProfileInfo();
       renderWeightHistory();
+      renderChart();
       document.getElementById('profileModal').classList.add('hidden');
     });
 
-    // Mostrar información en la UI
     function renderProfileInfo() {
       if (!profile) return;
 
       document.getElementById('displayGreeting').innerText = `¡Hola, ${profile.name}! 👋`;
       document.getElementById('statGoal').innerText = `${profile.weightTarget} kg`;
 
-      // Calcular IMC con el último peso registrado
       const currentWeight = weightHistory.length > 0 ? weightHistory[weightHistory.length - 1].weight : profile.weightInit;
       document.getElementById('statCurrentWeight').innerText = `${currentWeight} kg`;
 
@@ -551,9 +700,19 @@
         const bmi = (currentWeight / (heightMeters * heightMeters)).toFixed(1);
         document.getElementById('statBMI').innerText = bmi;
       }
+
+      document.getElementById('statWorkoutsCount').innerText = workoutHistory.length;
+
+      // Calcular barra de progreso hacia la meta
+      const totalChangeNeeded = Math.abs(profile.weightInit - profile.weightTarget);
+      if (totalChangeNeeded > 0) {
+        const currentChange = Math.abs(profile.weightInit - currentWeight);
+        let percent = Math.min(100, Math.round((currentChange / totalChangeNeeded) * 100));
+        document.getElementById('progressBarFill').style.width = `${percent}%`;
+        document.getElementById('progressPercent').innerText = `${percent}%`;
+      }
     }
 
-    // Abrir Modal de Perfil
     function openProfileModal() {
       if (profile) {
         document.getElementById('inputName').value = profile.name || '';
@@ -564,21 +723,87 @@
       document.getElementById('profileModal').classList.remove('hidden');
     }
 
-    // Manejo de Pestañas
-    function switchTab(tabId) {
+    function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-      event.target.classList.add('active');
+      if (btnElement) btnElement.classList.add('active');
       document.getElementById(tabId).classList.add('active');
+
+      if (tabId === 'tabWeight') {
+        setTimeout(renderChart, 100);
+      }
     }
 
-    // Alternar estado de series completadas
     function toggleSet(element) {
       element.classList.toggle('completed');
     }
 
-    // Cargar Historial de Peso
+    function finishWorkout(sessionName, tabId) {
+      const container = document.getElementById(tabId);
+      const cards = container.querySelectorAll('.exercise-card');
+      let details = [];
+
+      cards.forEach(card => {
+        const exName = card.getAttribute('data-ex');
+        const completedSets = card.querySelectorAll('.set-box.completed').length;
+        const totalSets = card.querySelectorAll('.set-box').length;
+        details.push(`${exName}: ${completedSets}/${totalSets} series`);
+      });
+
+      const newEntry = {
+        id: Date.now(),
+        session: sessionName,
+        date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        details: details
+      };
+
+      workoutHistory.unshift(newEntry);
+      localStorage.setItem('rutina_workouts', JSON.stringify(workoutHistory));
+
+      container.querySelectorAll('.set-box').forEach(box => box.classList.remove('completed'));
+
+      renderWorkoutHistory();
+      renderProfileInfo();
+      showToast("¡Entrenamiento registrado! 🔥");
+    }
+
+    function loadWorkoutHistory() {
+      const saved = localStorage.getItem('rutina_workouts');
+      if (saved) {
+        workoutHistory = JSON.parse(saved);
+      }
+      renderWorkoutHistory();
+    }
+
+    function renderWorkoutHistory() {
+      const container = document.getElementById('workoutLogContainer');
+      if (workoutHistory.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); font-size:0.85rem;">No has registrado entrenamientos aún.</div>';
+        return;
+      }
+
+      container.innerHTML = workoutHistory.map(item => `
+        <div class="history-card">
+          <div class="history-header">
+            <span class="history-title">${item.session}</span>
+            <span class="history-date">${item.date}</span>
+          </div>
+          <div class="history-body">
+            ${item.details.map(d => `• ${d}`).join('<br>')}
+          </div>
+          <button class="btn-delete" onclick="deleteWorkout(${item.id})">Eliminar registro</button>
+        </div>
+      `).join('');
+    }
+
+    function deleteWorkout(id) {
+      workoutHistory = workoutHistory.filter(w => w.id !== id);
+      localStorage.setItem('rutina_workouts', JSON.stringify(workoutHistory));
+      renderWorkoutHistory();
+      renderProfileInfo();
+    }
+
     function loadWeightHistory() {
       const savedWeights = localStorage.getItem('rutina_weights');
       if (savedWeights) {
@@ -587,13 +812,13 @@
       renderWeightHistory();
     }
 
-    // Guardar nuevo registro de peso
     document.getElementById('weightLogForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const weightVal = parseFloat(document.getElementById('newWeightInput').value);
       if (isNaN(weightVal)) return;
 
       const newEntry = {
+        id: Date.now(),
         date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
         weight: weightVal
       };
@@ -604,23 +829,6 @@
       document.getElementById('newWeightInput').value = '';
       renderWeightHistory();
       renderProfileInfo();
+      renderChart();
+      showToast("Peso registrado con éxito ⚖️");
     });
-
-    // Renderizar lista de pesos
-    function renderWeightHistory() {
-      const container = document.getElementById('weightLogHistory');
-      if (weightHistory.length === 0) {
-        container.innerHTML = '<div style="color: var(--text-muted); font-size:0.85rem;">No hay registros aún.</div>';
-        return;
-      }
-
-      container.innerHTML = weightHistory.slice().reverse().map(item => `
-        <div class="weight-log-item">
-          <span style="color: var(--text-muted);">${item.date}</span>
-          <span style="font-weight: 700; color: var(--accent-color);">${item.weight} kg</span>
-        </div>
-      `).join('');
-    }
-  </script>
-</body>
-</html>
