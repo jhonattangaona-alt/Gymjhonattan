@@ -24,6 +24,7 @@
       --text-muted: #94A3B8;
       --border-color: #334155;
       --success-color: #22C55E;
+      --warning-color: #F59E0B;
       --danger-color: #EF4444;
       --radius: 16px;
     }
@@ -125,11 +126,15 @@
       color: #0F172A;
       border: none;
       border-radius: 12px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
       margin-top: 10px;
       transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .btn-primary:active {
@@ -139,6 +144,16 @@
     .btn-success {
       background: var(--success-color);
       color: #0F172A;
+    }
+
+    .btn-warning {
+      background: var(--warning-color);
+      color: #0F172A;
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: var(--text-main);
     }
 
     /* Header Principal */
@@ -202,44 +217,43 @@
       margin-top: 4px;
     }
 
-    /* Barra de Progreso */
-    .progress-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
+    /* Banner de Recordatorio / Alerta de Hoy */
+    .alert-banner {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--warning-color);
       border-radius: 12px;
       padding: 12px 16px;
-      margin-bottom: 20px;
-    }
-
-    .progress-header {
+      margin-bottom: 16px;
       display: flex;
       justify-content: space-between;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin-bottom: 8px;
+      align-items: center;
     }
 
-    .progress-bar-bg {
-      background: #0F172A;
-      height: 8px;
-      border-radius: 4px;
-      overflow: hidden;
-      border: 1px solid var(--border-color);
+    .alert-text {
+      font-size: 0.85rem;
+      color: var(--warning-color);
+      font-weight: 600;
     }
 
-    .progress-bar-fill {
-      background: linear-gradient(90deg, var(--accent-color), var(--success-color));
-      height: 100%;
-      width: 0%;
-      border-radius: 4px;
-      transition: width 0.5s ease;
+    .alert-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-xs {
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
     }
 
     /* Selector de Pestañas */
     .tab-buttons {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 3px;
       background: var(--card-bg);
       border-radius: 12px;
       padding: 4px;
@@ -248,11 +262,11 @@
     }
 
     .tab-btn {
-      padding: 10px 2px;
+      padding: 8px 2px;
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 600;
       border-radius: 8px;
       cursor: pointer;
@@ -310,7 +324,7 @@
       line-height: 1.4;
     }
 
-    /* Sets / Reps Checkbox (Botones para mejor respuesta en iOS) */
+    /* Sets / Reps Checkbox */
     .sets-row {
       display: flex;
       gap: 10px;
@@ -337,7 +351,7 @@
       font-weight: 700;
     }
 
-    /* Secciones e Historial */
+    /* Secciones, Calendario e Historial */
     .section-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -350,6 +364,65 @@
       font-size: 1.1rem;
       font-weight: 700;
       margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .calendar-item {
+      background: #0F172A;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cal-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--accent-color);
+    }
+
+    .cal-date {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .cal-status {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .status-pending {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--warning-color);
+    }
+
+    .status-done {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--success-color);
+    }
+
+    .status-snoozed {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-color);
+    }
+
+    .cal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
     }
 
     .chart-container {
@@ -472,10 +545,21 @@
     <header>
       <div>
         <div class="user-greeting" id="displayGreeting">¡Hola! 👋</div>
-        <div class="user-sub" id="displaySub">Mancuernas 4kg & 7.5kg</div>
+        <div class="user-sub" id="displaySub">Mancuernas 4kg & 7.5kg (23:00 hs)</div>
       </div>
       <button type="button" class="btn-edit-profile" onclick="openProfileModal()">Editar Perfil</button>
     </header>
+
+    <!-- BANNER DE RECORDATORIO SI HAY ENTRENAMIENTO HOY -->
+    <div id="todayAlert" class="alert-banner hidden">
+      <div>
+        <div class="alert-text" id="todayAlertText">⏰ ¡Hoy toca entrenar!</div>
+        <div style="font-size:0.75rem; color:var(--text-muted);" id="todayAlertSub">Sesión A | 23:00 hs</div>
+      </div>
+      <div class="alert-actions">
+        <button type="button" class="btn-xs btn-warning" onclick="snoozeTodaySession()">Posponer 24h ⏱️</button>
+      </div>
+    </div>
 
     <!-- ESTADÍSTICAS RÁPIDAS -->
     <div class="stats-grid">
@@ -497,21 +581,11 @@
       </div>
     </div>
 
-    <!-- BARRA DE PROGRESO HACIA META -->
-    <div class="progress-card">
-      <div class="progress-header">
-        <span>Progreso hacia tu Meta</span>
-        <span id="progressPercent">0%</span>
-      </div>
-      <div class="progress-bar-bg">
-        <div id="progressBarFill" class="progress-bar-fill"></div>
-      </div>
-    </div>
-
     <!-- PESTAÑAS DE NAVEGACIÓN -->
     <div class="tab-buttons">
       <button type="button" class="tab-btn active" onclick="switchTab('tabA', event)">Sesión A</button>
       <button type="button" class="tab-btn" onclick="switchTab('tabB', event)">Sesión B</button>
+      <button type="button" class="tab-btn" onclick="switchTab('tabCalendar', event)">Calendario</button>
       <button type="button" class="tab-btn" onclick="switchTab('tabWeight', event)">Mi Peso</button>
       <button type="button" class="tab-btn" onclick="switchTab('tabHistory', event)">Historial</button>
     </div>
@@ -608,6 +682,25 @@
       </button>
     </div>
 
+    <!-- CALENDARIO DE ENTRENAMIENTOS Y PROGRAMACIÓN -->
+    <div id="tabCalendar" class="tab-content">
+      <div class="section-card">
+        <div class="section-title">
+          <span>📅 Calendario (23:00 hs)</span>
+          <button type="button" class="btn-xs btn-secondary" onclick="generateSchedule()">Reiniciar Días</button>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:14px;">3 días a la semana alternando entre Sesión A y B a las 23:00 hs.</p>
+        
+        <div id="calendarList">
+          <!-- Lista dinámica de sesiones -->
+        </div>
+
+        <button type="button" class="btn-primary btn-secondary" style="margin-top:14px;" onclick="downloadICS()">
+          📲 Exportar Recordatorios 23:00 hs al iPhone (.ics)
+        </button>
+      </div>
+    </div>
+
     <!-- EVOLUCIÓN Y REGISTRO DE PESO -->
     <div id="tabWeight" class="tab-content">
       <div class="section-card">
@@ -650,12 +743,15 @@
     let profile = null;
     let weightHistory = [];
     let workoutHistory = [];
+    let schedule = [];
     let myChart = null;
 
     document.addEventListener('DOMContentLoaded', () => {
       loadProfile();
       loadWeightHistory();
       loadWorkoutHistory();
+      loadSchedule();
+      checkTodayAlert();
     });
 
     function loadProfile() {
@@ -720,14 +816,6 @@
       }
 
       document.getElementById('statWorkoutsCount').innerText = workoutHistory.length;
-
-      const totalChangeNeeded = Math.abs(profile.weightInit - profile.weightTarget);
-      if (totalChangeNeeded > 0) {
-        const currentChange = Math.abs(profile.weightInit - currentWeight);
-        let percent = Math.min(100, Math.round((currentChange / totalChangeNeeded) * 100));
-        document.getElementById('progressBarFill').style.width = `${percent}%`;
-        document.getElementById('progressPercent').innerText = `${percent}%`;
-      }
     }
 
     function openProfileModal() {
@@ -792,6 +880,16 @@
 
         container.querySelectorAll('.set-box').forEach(box => box.classList.remove('completed'));
 
+        // Marcar la sesión de hoy como completada en el calendario
+        const todayStr = new Date().toDateString();
+        let match = schedule.find(s => new Date(s.timestamp).toDateString() === todayStr && !s.done);
+        if (match) {
+          match.done = true;
+          localStorage.setItem('rutina_schedule', JSON.stringify(schedule));
+          renderSchedule();
+          checkTodayAlert();
+        }
+
         renderWorkoutHistory();
         renderProfileInfo();
         showToast("¡Entrenamiento registrado! 🔥");
@@ -841,6 +939,175 @@
       renderProfileInfo();
     }
 
+    // LÓGICA DEL CALENDARIO & PROGRAMACIÓN (23:00 HS)
+    function loadSchedule() {
+      const savedSchedule = localStorage.getItem('rutina_schedule');
+      if (savedSchedule) {
+        try {
+          schedule = JSON.parse(savedSchedule);
+        } catch(e) {
+          generateSchedule();
+        }
+      } else {
+        generateSchedule();
+      }
+      renderSchedule();
+    }
+
+    function generateSchedule() {
+      schedule = [];
+      let current = new Date();
+      current.setHours(23, 0, 0, 0); // Configurado a las 23:00 hrs
+      
+      let sessionType = 'A';
+
+      for (let i = 0; i < 30; i++) {
+        let dayOfWeek = current.getDay(); // 1: Lun, 3: Mié, 5: Vie
+        if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5) {
+          schedule.push({
+            id: Date.now() + i,
+            session: sessionType === 'A' ? 'Sesión A (Piernas & Empuje)' : 'Sesión B (Espalda & Hombros)',
+            sessionType: sessionType,
+            timestamp: current.getTime(),
+            done: false,
+            snoozed: false
+          });
+          sessionType = sessionType === 'A' ? 'B' : 'A';
+        }
+        current.setDate(current.getDate() + 1);
+      }
+
+      localStorage.setItem('rutina_schedule', JSON.stringify(schedule));
+      renderSchedule();
+      checkTodayAlert();
+    }
+
+    function renderSchedule() {
+      const container = document.getElementById('calendarList');
+      if (!container) return;
+
+      if (schedule.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-muted); font-size:0.85rem;">No hay sesiones programadas.</div>';
+        return;
+      }
+
+      container.innerHTML = schedule.slice(0, 12).map(item => {
+        const dateObj = new Date(item.timestamp);
+        const dateStr = dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
+        
+        let statusBadge = item.done 
+          ? '<span class="cal-status status-done">Completado ✓</span>'
+          : item.snoozed 
+          ? '<span class="cal-status status-snoozed">Pospuesto 24h ⏱️</span>'
+          : '<span class="cal-status status-pending">Pendiente ⏰</span>';
+
+        return `
+          <div class="calendar-item">
+            <div class="cal-top">
+              <span class="cal-title">${item.session}</span>
+              ${statusBadge}
+            </div>
+            <div class="cal-date">📅 ${dateStr} a las 23:00 hs</div>
+            ${!item.done ? `
+              <div class="cal-actions">
+                <button type="button" class="btn-xs btn-warning" onclick="snoozeSession(${item.id})">Posponer 24h ⏱️</button>
+                <button type="button" class="btn-xs btn-success" onclick="toggleCalendarDone(${item.id})">Marcar Hecho ✓</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function snoozeSession(id) {
+      let item = schedule.find(s => s.id === id);
+      if (item) {
+        item.timestamp += 24 * 60 * 60 * 1000; // Sumar 24 horas
+        item.snoozed = true;
+        localStorage.setItem('rutina_schedule', JSON.stringify(schedule));
+        renderSchedule();
+        checkTodayAlert();
+        showToast("Sesión pospuesta 24 horas ⏱️");
+      }
+    }
+
+    function snoozeTodaySession() {
+      const todayStr = new Date().toDateString();
+      let match = schedule.find(s => new Date(s.timestamp).toDateString() === todayStr && !s.done);
+      if (match) {
+        snoozeSession(match.id);
+      }
+    }
+
+    function toggleCalendarDone(id) {
+      let item = schedule.find(s => s.id === id);
+      if (item) {
+        item.done = !item.done;
+        localStorage.setItem('rutina_schedule', JSON.stringify(schedule));
+        renderSchedule();
+        checkTodayAlert();
+        showToast("Estado de sesión actualizado ✓");
+      }
+    }
+
+    function checkTodayAlert() {
+      const alertBanner = document.getElementById('todayAlert');
+      const todayStr = new Date().toDateString();
+      let match = schedule.find(s => new Date(s.timestamp).toDateString() === todayStr && !s.done);
+
+      if (match) {
+        document.getElementById('todayAlertText').innerText = `⏰ Recordatorio de Hoy: ${match.sessionType === 'A' ? 'Sesión A' : 'Sesión B'}`;
+        document.getElementById('todayAlertSub').innerText = `${match.session} | 23:00 hs`;
+        alertBanner.classList.remove('hidden');
+      } else {
+        alertBanner.classList.add('hidden');
+      }
+    }
+
+    // EXPORTAR ARCHIVO .ICS CON HORA 23:00
+    function downloadICS() {
+      let icsContent = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Mi Rutina Pesas//ES",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH"
+      ];
+
+      schedule.slice(0, 15).forEach(s => {
+        if (!s.done) {
+          let startDate = new Date(s.timestamp);
+          let endDate = new Date(s.timestamp + 45 * 60 * 1000); // 45 min duración
+
+          let formatICSDate = (d) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+
+          icsContent.push("BEGIN:VEVENT");
+          icsContent.push(`SUMMARY:${s.session}`);
+          icsContent.push(`DESCRIPTION:Rutina de pesas con mancuernas (4kg y 7.5kg)`);
+          icsContent.push(`DTSTART:${formatICSDate(startDate)}`);
+          icsContent.push(`DTEND:${formatICSDate(endDate)}`);
+          icsContent.push("BEGIN:VALARM");
+          icsContent.push("ACTION:DISPLAY");
+          icsContent.push("DESCRIPTION:¡Hora de entrenar!");
+          icsContent.push("TRIGGER:-PT15M"); // Recordatorio a las 22:45 hs
+          icsContent.push("END:VALARM");
+          icsContent.push("END:VEVENT");
+        }
+      });
+
+      icsContent.push("END:VCALENDAR");
+
+      const blob = new Blob([icsContent.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.setAttribute("download", "rutina_mancuernas_23hs.ics");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Archivo .ics listo a las 23:00 hs 📲");
+    }
+
+    // MANEJO DE PESO
     function loadWeightHistory() {
       const savedWeights = localStorage.getItem('rutina_weights');
       if (savedWeights) {
@@ -904,9 +1171,7 @@
       const canvas = document.getElementById('weightChart');
       if (!canvas) return;
 
-      if (typeof Chart === 'undefined') {
-        return;
-      }
+      if (typeof Chart === 'undefined') return;
 
       try {
         const ctx = canvas.getContext('2d');
