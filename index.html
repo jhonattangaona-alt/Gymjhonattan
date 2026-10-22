@@ -1,32 +1,54 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<html lang="es" class="h-full bg-slate-950 text-slate-100 selection:bg-sky-500 selection:text-white">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>FitDumbbell - Rutina Pádel & Fuerza</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FitDumbbell">
+  <title>FitDumbbell - Entrenamiento, Pádel & Peso iOS</title>
+
+  <!-- Tailwind CSS & CDN Libraries -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
+    /* Estilos iOS y tipografía del sistema Apple */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
     }
+    
+    /* Adaptación Safe Area para Notch e Inicio de iPhone */
+    .pb-ios-nav {
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+    .pt-ios-header {
+      padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+
     .glass-header {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
+
     .glass-card {
-      background: rgba(30, 41, 59, 0.7);
-      backdrop-filter: blur(8px);
+      background: rgba(30, 41, 59, 0.65);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .ios-btn-active {
-      background-color: #007AFF;
-      color: #ffffff;
-      box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35);
+
+    .glass-card-active {
+      background: rgba(14, 165, 233, 0.12);
+      border-color: rgba(56, 189, 248, 0.4);
     }
-    /* Hide scrollbars for slick look */
+
+    /* Ocultar barra de scroll para navegación táctil limpia */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -34,79 +56,94 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+
+    /* Animación pulso suave para temporizadores activos */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-ring {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
   </style>
 </head>
-<body class="h-full flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-blue-500 selection:text-white pb-24">
+<body class="h-full flex flex-col bg-slate-950 text-slate-100 antialiased pb-ios-nav">
 
-  <!-- Header Fijo Estilo iOS -->
-  <header class="sticky top-0 z-40 glass-header border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center space-x-2">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+  <!-- HEADER FIJO TIPO iOS -->
+  <header class="sticky top-0 z-30 glass-header border-b border-slate-800/80 px-4 py-3 pt-ios-header flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
         <i data-lucide="dumbbell" class="w-5 h-5 text-white"></i>
       </div>
       <div>
-        <h1 class="text-base font-bold tracking-tight leading-none text-white">FitDumbbell 40+</h1>
-        <p class="text-[11px] text-slate-400 font-medium mt-0.5">Adaptado a Pádel & Mancuernas 7.5kg</p>
+        <h1 class="text-base font-bold tracking-tight leading-none text-white flex items-center gap-1.5">
+          FitDumbbell <span class="text-xs px-1.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 font-semibold border border-sky-500/30">40+</span>
+        </h1>
+        <p class="text-[11px] text-slate-400 font-medium mt-0.5" id="header-subtitle">Rutina Mancuernas 7.5kg & Pádel</p>
       </div>
     </div>
-    <div class="flex items-center space-x-1.5 bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-full">
-      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-      <span class="text-xs font-semibold text-slate-300" id="current-week-tag">Semana 1 (Adaptación)</span>
+
+    <!-- Indicador de Sesión / Cronómetro Principal -->
+    <div id="session-badge-container" class="flex items-center space-x-2">
+      <button onclick="toggleSessionState()" id="header-session-btn" class="flex items-center space-x-1.5 bg-slate-900 border border-slate-700 hover:border-sky-500 px-3 py-1.5 rounded-full min-h-[38px] transition-all">
+        <span id="session-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+        <span id="session-badge-text" class="text-xs font-semibold text-slate-300 font-mono">▶ Iniciar Sesión</span>
+      </button>
     </div>
   </header>
 
-  <!-- Navegación Superior de Pestañas -->
-  <nav class="bg-slate-900/60 p-1.5 border-b border-slate-800/60 flex space-x-1 overflow-x-auto no-scrollbar">
-    <button onclick="switchTab('tab-rutina')" id="nav-rutina" class="tab-btn flex-1 min-w-[90px] py-2 px-3 text-xs font-semibold rounded-lg text-center transition-all duration-200 ios-btn-active">
-      <i data-lucide="play-circle" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Rutina
-    </button>
-    <button onclick="switchTab('tab-calendario')" id="nav-calendario" class="tab-btn flex-1 min-w-[90px] py-2 px-3 text-xs font-semibold rounded-lg text-center text-slate-400 hover:text-slate-200 transition-all duration-200">
-      <i data-lucide="calendar" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Pádel & Días
-    </button>
-    <button onclick="switchTab('tab-historial')" id="nav-historial" class="tab-btn flex-1 min-w-[90px] py-2 px-3 text-xs font-semibold rounded-lg text-center text-slate-400 hover:text-slate-200 transition-all duration-200">
-      <i data-lucide="history" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Historial
-    </button>
-    <button onclick="switchTab('tab-guia')" id="nav-guia" class="tab-btn flex-1 min-w-[90px] py-2 px-3 text-xs font-semibold rounded-lg text-center text-slate-400 hover:text-slate-200 transition-all duration-200">
-      <i data-lucide="book-open" class="w-4 h-4 inline-block mr-1 -mt-0.5"></i> Guía Carga
-    </button>
-  </nav>
+  <!-- CONTENIDO PRINCIPAL / PESTAÑAS -->
+  <main class="flex-1 max-w-2xl w-full mx-auto p-4 space-y-5">
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <main class="flex-1 max-w-3xl w-full mx-auto p-4 space-y-5">
-
-    <!-- PESTAÑA 1: RUTINA Y REGISTRO -->
-    <section id="tab-rutina" class="tab-content space-y-4">
+    <!-- ==================== PESTAÑA 1: ENTRENAMIENTO ==================== -->
+    <section id="tab-entrenamiento" class="tab-content space-y-4">
       
+      <!-- Banner de Control de Sesión Activa -->
+      <div id="session-active-banner" class="hidden glass-card glass-card-active rounded-2xl p-3.5 flex items-center justify-between border-sky-500/40">
+        <div class="flex items-center space-x-3">
+          <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+          <div>
+            <p class="text-xs font-bold text-sky-300 uppercase tracking-wider">Sesión En Curso</p>
+            <p id="active-session-clock" class="text-lg font-mono font-bold text-white leading-none mt-0.5">00:00:00</p>
+          </div>
+        </div>
+        <button onclick="promptFinishSession()" class="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center space-x-1.5 min-h-[44px]">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Finalizar</span>
+        </button>
+      </div>
+
       <!-- Selector de Sesión (Días 1 a 4) -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <button onclick="selectDay(1)" id="day-btn-1" class="day-selector-btn py-2.5 px-3 rounded-xl glass-card text-left transition-all border-blue-500/80 bg-blue-600/20">
-          <p class="text-[10px] uppercase tracking-wider text-blue-400 font-bold">Lunes / Sesión 1</p>
-          <p class="text-xs font-bold text-white mt-0.5 truncate">Torso A</p>
+        <button onclick="selectDay(1)" id="day-btn-1" class="day-selector-btn p-3 rounded-2xl glass-card text-left transition-all border-sky-500/80 bg-sky-600/20 min-h-[54px]">
+          <p class="text-[10px] uppercase tracking-wider text-sky-400 font-bold">Lunes / Día 1</p>
+          <p class="text-xs font-bold text-white mt-0.5 truncate">Torso A (Fuerza)</p>
         </button>
-        <button onclick="selectDay(2)" id="day-btn-2" class="day-selector-btn py-2.5 px-3 rounded-xl glass-card text-left transition-all hover:bg-slate-800/50">
-          <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Martes / Sesión 2</p>
-          <p class="text-xs font-bold text-white mt-0.5 truncate">Pierna A</p>
+        <button onclick="selectDay(2)" id="day-btn-2" class="day-selector-btn p-3 rounded-2xl glass-card text-left transition-all hover:bg-slate-800/50 min-h-[54px]">
+          <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Martes / Día 2</p>
+          <p class="text-xs font-bold text-white mt-0.5 truncate">Pierna A (Pre-Pádel)</p>
         </button>
-        <button onclick="selectDay(3)" id="day-btn-3" class="day-selector-btn py-2.5 px-3 rounded-xl glass-card text-left transition-all hover:bg-slate-800/50">
-          <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Viernes / Sesión 3</p>
+        <button onclick="selectDay(3)" id="day-btn-3" class="day-selector-btn p-3 rounded-2xl glass-card text-left transition-all hover:bg-slate-800/50 min-h-[54px]">
+          <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Viernes / Día 3</p>
           <p class="text-xs font-bold text-white mt-0.5 truncate">Torso B (Codo)</p>
         </button>
-        <button onclick="selectDay(4)" id="day-btn-4" class="day-selector-btn py-2.5 px-3 rounded-xl glass-card text-left transition-all hover:bg-slate-800/50">
-          <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Sábado / Sesión 4</p>
-          <p class="text-xs font-bold text-white mt-0.5 truncate">Pierna B (Pádel)</p>
+        <button onclick="selectDay(4)" id="day-btn-4" class="day-selector-btn p-3 rounded-2xl glass-card text-left transition-all hover:bg-slate-800/50 min-h-[54px]">
+          <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Sábado / Día 4</p>
+          <p class="text-xs font-bold text-white mt-0.5 truncate">Pierna B (Unilateral)</p>
         </button>
       </div>
 
       <!-- Header del Día Seleccionado -->
       <div class="glass-card rounded-2xl p-4 border border-slate-800 flex items-center justify-between">
         <div>
-          <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30" id="day-tag font-mono">Día 1</span>
-          <h2 class="text-lg font-bold text-white mt-1" id="day-title">Torso A (Fuerza e Impacto Calórico)</h2>
-          <p class="text-xs text-slate-400 mt-0.5" id="day-desc">Enfoque en empujes y tracciones con agarre neutro para proteger el codo.</p>
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30" id="day-tag font-mono">Día 1</span>
+          <h2 class="text-base font-bold text-white mt-1" id="day-title">Torso A (Fuerza e Impacto Calórico)</h2>
+          <p class="text-xs text-slate-400 mt-0.5 leading-snug" id="day-desc">Empujes y tracciones neutras para proteger el codo.</p>
         </div>
-        <button onclick="toggleWarmup()" class="text-xs font-semibold text-blue-400 bg-blue-950/60 hover:bg-blue-900/60 border border-blue-800/60 px-3 py-2 rounded-xl flex items-center space-x-1 transition-all">
+        <button onclick="toggleWarmup()" class="text-xs font-semibold text-sky-400 bg-sky-950/60 hover:bg-sky-900/60 border border-sky-800/60 px-3 py-2 rounded-xl flex items-center space-x-1.5 transition-all min-h-[44px]">
           <i data-lucide="flame" class="w-4 h-4 text-orange-400"></i>
-          <span>Calentamiento</span>
+          <span>Calentar</span>
         </button>
       </div>
 
@@ -116,141 +153,115 @@
           <i data-lucide="activity" class="w-4 h-4"></i>
           <span>Calentamiento Específico (5-8 Minutos)</span>
         </div>
-        <ul class="text-xs text-slate-300 space-y-1.5 pl-5 list-disc">
-          <li>2 min de movilidad articular suave (muñecas, hombros, cadera y tobillos).</li>
+        <ul class="text-xs text-slate-300 space-y-1.5 pl-5 list-disc leading-relaxed">
+          <li>2 min movilidad articular (muñecas, hombros, cadera, tobillos).</li>
           <li>2 series x 10 repeticiones de <strong>Cat-Cow</strong> en suelo.</li>
-          <li>2 series x 10 repeticiones de <strong>Puente de Glúteo</strong> sin peso.</li>
-          <li>1 serie de aproximación del 1er ejercicio (50% de las repeticiones sin peso o liviano).</li>
+          <li>2 series x 10 repeticiones de <strong>Puente de Glúteo</strong>.</li>
+          <li>1 serie de aproximación ligera del 1er ejercicio.</li>
         </ul>
       </div>
 
-      <!-- Contenedor de 5 Ejercicios -->
+      <!-- Contenedor Dinámico de los 5 Ejercicios -->
       <div id="exercises-container" class="space-y-4">
-        <!-- Render dinámico desde JavaScript -->
+        <!-- Renderizado dinámico con JS -->
       </div>
 
-      <!-- Panel Global de Cierre de Sesión -->
-      <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-        <h3 class="text-sm font-bold text-white flex items-center space-x-2">
-          <i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-400"></i>
-          <span>Registro General de la Sesión</span>
-        </h3>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Esfuerzo Percibido General (RPE 1-10)</label>
-            <select id="session-rpe" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
-              <option value="6">6 - Ligero / Muy cómodo</option>
-              <option value="7" selected>7 - Moderado (RIR 3 conservado)</option>
-              <option value="8">8 - Exigente (RIR 2 cumplido)</option>
-              <option value="9">9 - Cerca del límite (RIR 1)</option>
-              <option value="10">10 - Esfuerzo Máximo</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Estado / Molestia en Codo (0 a 5)</label>
-            <select id="session-elbow" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
-              <option value="0" selected>0 - Sin ninguna molestia</option>
-              <option value="1">1 - Sensación mínima / Ligera rigidez</option>
-              <option value="2">2 - Molestia leve que no impide ejercitar</option>
-              <option value="3">3 - Molestia notoria (requiere reducir peso)</option>
-              <option value="4">4 - Dolor punzante (detener ejercicio)</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">Notas u Observaciones (Sensaciones, pádel, energía)</label>
-          <textarea id="session-notes" rows="2" placeholder="Ej: Buenas sensaciones, el codo respondió perfectamente en los remos neutros..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"></textarea>
-        </div>
-
-        <button onclick="saveWorkout()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center space-x-2">
-          <i data-lucide="save" class="w-4 h-4"></i>
-          <span>Guardar Entrenamiento de Hoy</span>
+      <!-- Botón Inferior Grande de Guardar Sesión -->
+      <div class="pt-2">
+        <button onclick="promptFinishSession()" class="w-full py-3.5 px-4 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-sm rounded-2xl shadow-xl shadow-sky-600/25 flex items-center justify-center space-x-2 min-h-[50px] transition-all">
+          <i data-lucide="save" class="w-5 h-5"></i>
+          <span>Finalizar & Guardar Sesión de Hoy</span>
         </button>
       </div>
 
     </section>
 
-    <!-- PESTAÑA 2: CALENDARIO & PÁDEL -->
+    <!-- ==================== PESTAÑA 2: CALENDARIO DE PÁDEL ==================== -->
     <section id="tab-calendario" class="tab-content hidden space-y-4">
       <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-        <h2 class="text-base font-bold text-white flex items-center space-x-2">
-          <i data-lucide="calendar-days" class="w-5 h-5 text-blue-400"></i>
-          <span>Planificación Semanal Compatible con Pádel</span>
-        </h2>
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-white flex items-center space-x-2">
+            <i data-lucide="calendar-days" class="w-5 h-5 text-sky-400"></i>
+            <span>Cronograma Semanal con Pádel</span>
+          </h2>
+          <button onclick="exportCalendarICS()" class="text-xs font-semibold text-sky-400 bg-sky-950/80 hover:bg-sky-900 border border-sky-700/50 px-3 py-1.5 rounded-xl flex items-center space-x-1 min-h-[38px]">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Exportar .ics</span>
+          </button>
+        </div>
         <p class="text-xs text-slate-300 leading-relaxed">
-          Esta estructura está diseñada para maximizar el gasto calórico y la fuerza sin interferir con la frescura de tus piernas ni saturar tu codo para la liga de los jueves.
+          Diseñado para llegar descansado al partido de liga de los jueves (dejas pasar >48h tras el día de pierna).
         </p>
 
-        <div class="space-y-2 mt-3">
+        <!-- Timeline Días de la Semana -->
+        <div class="space-y-2 pt-2">
           <!-- Lunes -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
             <div class="flex items-center space-x-3">
-              <span class="w-20 text-xs font-bold text-blue-400 uppercase">Lunes</span>
+              <span class="w-16 text-xs font-bold text-sky-400 uppercase">Lunes</span>
               <div>
-                <p class="text-xs font-bold text-white">Fuerza: Torso A</p>
-                <p class="text-[11px] text-slate-400">Empujes y Tracciones principales con mancuernas</p>
+                <p class="text-xs font-bold text-white">Torso A (Fuerza)</p>
+                <p class="text-[11px] text-slate-400">Empujes & Tracciones neutras con mancuernas</p>
               </div>
             </div>
-            <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">Sesión 1</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300">Sesión 1</span>
           </div>
 
           <!-- Martes -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
             <div class="flex items-center space-x-3">
-              <span class="w-20 text-xs font-bold text-emerald-400 uppercase">Martes</span>
+              <span class="w-16 text-xs font-bold text-emerald-400 uppercase">Martes</span>
               <div>
-                <p class="text-xs font-bold text-white">Fuerza: Pierna & Cadera A</p>
-                <p class="text-[11px] text-slate-400">Trabajo pesado de piernas +48h antes del partido</p>
+                <p class="text-xs font-bold text-white">Pierna & Cadera A</p>
+                <p class="text-[11px] text-slate-400">Trabajo pesadito piernas (+48h antes de liga)</p>
               </div>
             </div>
             <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Sesión 2</span>
           </div>
 
           <!-- Miércoles -->
-          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800 opacity-80">
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800 opacity-70">
             <div class="flex items-center space-x-3">
-              <span class="w-20 text-xs font-bold text-slate-400 uppercase">Miércoles</span>
+              <span class="w-16 text-xs font-bold text-slate-400 uppercase">Miércoles</span>
               <div>
                 <p class="text-xs font-bold text-slate-300">Descanso Activo / Movilidad</p>
-                <p class="text-[11px] text-slate-500">Caminata suave y estiramientos de codo/cadera</p>
+                <p class="text-[11px] text-slate-500">Paseo ligero + estiramiento suave codo/cadera</p>
               </div>
             </div>
             <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400">Descanso</span>
           </div>
 
           <!-- Jueves -->
-          <div class="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-950/40 to-orange-950/40 border border-amber-500/30">
+          <div class="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-950/40 to-orange-950/40 border border-amber-500/40">
             <div class="flex items-center space-x-3">
-              <span class="w-20 text-xs font-bold text-amber-400 uppercase">Jueves</span>
+              <span class="w-16 text-xs font-bold text-amber-400 uppercase">Jueves</span>
               <div>
-                <p class="text-xs font-bold text-amber-200">PARTIDO DE LIGA DE PÁDEL (20:30 hs)</p>
-                <p class="text-[11px] text-amber-300/80">Cero trabajo pesado de piernas antes del partido</p>
+                <p class="text-xs font-bold text-amber-200">🎾 LIGA DE PÁDEL (20:30 HS)</p>
+                <p class="text-[11px] text-amber-300/80">Piernas frescas y codo protegido</p>
               </div>
             </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/30 text-amber-300">PÁDEL</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/30 text-amber-300">PARTIDO</span>
           </div>
 
           <!-- Viernes -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
             <div class="flex items-center space-x-3">
-              <span class="w-20 text-xs font-bold text-blue-400 uppercase">Viernes</span>
+              <span class="w-16 text-xs font-bold text-sky-400 uppercase">Viernes</span>
               <div>
-                <p class="text-xs font-bold text-white">Fuerza: Torso B</p>
-                <p class="text-[11px] text-slate-400">Densidad muscular e higiene articular de codo</p>
+                <p class="text-xs font-bold text-white">Torso B (Salud de Codo)</p>
+                <p class="text-[11px] text-slate-400">Volumen muscular e higiene articular</p>
               </div>
             </div>
-            <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">Sesión 3</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300">Sesión 3</span>
           </div>
 
           <!-- Sábado -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
             <div class="flex items-center space-x-3">
-              <span class="w-20 text-xs font-bold text-emerald-400 uppercase">Sábado</span>
+              <span class="w-16 text-xs font-bold text-emerald-400 uppercase">Sábado</span>
               <div>
-                <p class="text-xs font-bold text-white">Fuerza: Pierna & Unilateral B</p>
-                <p class="text-[11px] text-slate-400">Estabilidad, equilibrio y transferencias para el pádel</p>
+                <p class="text-xs font-bold text-white">Pierna & Unilateral B</p>
+                <p class="text-[11px] text-slate-400">Estabilidad unipodal y rotaciones de cadera</p>
               </div>
             </div>
             <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Sesión 4</span>
@@ -259,10 +270,10 @@
           <!-- Domingo -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-800">
             <div class="flex items-center space-x-3">
-              <span class="w-20 text-xs font-bold text-purple-400 uppercase">Domingo</span>
+              <span class="w-16 text-xs font-bold text-purple-400 uppercase">Domingo</span>
               <div>
-                <p class="text-xs font-bold text-white">Pádel Eventual o Descanso Total</p>
-                <p class="text-[11px] text-slate-400">Recuperación completa del ciclo semanal</p>
+                <p class="text-xs font-bold text-white">Pádel Amistoso / Recuperación</p>
+                <p class="text-[11px] text-slate-400">Partido de fin de semana o descanso total</p>
               </div>
             </div>
             <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">Opcional</span>
@@ -271,15 +282,97 @@
       </div>
     </section>
 
-    <!-- PESTAÑA 3: HISTORIAL DE SESIONES -->
+    <!-- ==================== PESTAÑA 3: PESO & GRÁFICOS ==================== -->
+    <section id="tab-peso" class="tab-content hidden space-y-4">
+      
+      <!-- Registro Rápido de Peso -->
+      <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+          <i data-lucide="scale" class="w-5 h-5 text-sky-400"></i>
+          <span>Registrar Peso Corporal</span>
+        </h2>
+        <form onsubmit="addWeightEntry(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Peso (kg)</label>
+            <input type="number" step="0.1" id="input-weight-val" placeholder="ej: 82.5" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white font-bold focus:border-sky-500 focus:outline-none min-h-[44px]">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Fecha</label>
+            <input type="date" id="input-weight-date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-sky-500 focus:outline-none min-h-[44px]">
+          </div>
+          <div class="flex items-end">
+            <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-sky-600/30 transition-all flex items-center justify-center space-x-1 min-h-[44px]">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Guardar Peso</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Resumen Estadístico Rápido -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="glass-card p-3 rounded-2xl border border-slate-800 text-center">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Peso Actual</p>
+          <p id="stat-current-weight" class="text-lg font-bold text-white font-mono mt-0.5">-- kg</p>
+        </div>
+        <div class="glass-card p-3 rounded-2xl border border-slate-800 text-center">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Objetivo</p>
+          <p id="stat-target-weight" class="text-lg font-bold text-sky-400 font-mono mt-0.5">-- kg</p>
+        </div>
+        <div class="glass-card p-3 rounded-2xl border border-slate-800 text-center">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Progreso</p>
+          <p id="stat-weight-diff" class="text-lg font-bold text-emerald-400 font-mono mt-0.5">-- kg</p>
+        </div>
+        <div class="glass-card p-3 rounded-2xl border border-slate-800 text-center">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">IMC Actual</p>
+          <p id="stat-imc-val" class="text-lg font-bold text-amber-400 font-mono mt-0.5">--</p>
+        </div>
+      </div>
+
+      <!-- Gráfico 1: Evolución del Peso Corporal -->
+      <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+          <i data-lucide="line-chart" class="w-4 h-4 text-sky-400"></i>
+          <span>Evolución del Peso Corporal (kg)</span>
+        </h3>
+        <div class="h-56 relative w-full">
+          <canvas id="weightChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráfico 2: Sesiones / Volumen y Estado del Codo -->
+      <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+          <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-400"></i>
+          <span>Volumen Semanal & Molestias en Codo (0-5)</span>
+        </h3>
+        <div class="h-48 relative w-full">
+          <canvas id="statsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Historial de Pesajes Registrados -->
+      <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
+        <h3 class="text-xs font-bold text-white flex items-center justify-between">
+          <span>Bitácora de Pesajes</span>
+          <span class="text-[10px] text-slate-400 font-normal">Más recientes primero</span>
+        </h3>
+        <div id="weight-history-list" class="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar pt-1">
+          <!-- Renderizado dinámico -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== PESTAÑA 4: HISTORIAL DE SESIONES ==================== -->
     <section id="tab-historial" class="tab-content hidden space-y-4">
       <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="text-base font-bold text-white flex items-center space-x-2">
             <i data-lucide="history" class="w-5 h-5 text-indigo-400"></i>
-            <span>Historial de Registros</span>
+            <span>Historial de Entrenamientos</span>
           </h2>
-          <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 rounded bg-rose-950/40 border border-rose-800/40">
+          <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2.5 py-1 rounded-lg bg-rose-950/40 border border-rose-800/40 min-h-[36px]">
             Borrar Todo
           </button>
         </div>
@@ -290,124 +383,225 @@
       </div>
     </section>
 
-    <!-- PESTAÑA 4: GUÍA DE PROGRESIÓN Y RIR -->
-    <section id="tab-guia" class="tab-content hidden space-y-4">
-      <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-3">
-        <h2 class="text-base font-bold text-white flex items-center space-x-2">
-          <i data-lucide="trending-up" class="w-5 h-5 text-cyan-400"></i>
-          <span>Progresión con Peso Fijo (2x Mancuernas 7,5 kg)</span>
-        </h2>
-        <p class="text-xs text-slate-300 leading-relaxed">
-          Al contar únicamente con mancuernas fijas de 7,5 kg, el avance se logra mediante variables de calidad de movimiento y volumen estratégico:
-        </p>
-
-        <div class="space-y-3 pt-2">
-          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-            <p class="text-xs font-bold text-blue-400">1. Rango de Repeticiones Escalonado</p>
-            <p class="text-xs text-slate-300">Empieza en la repetición mínima (ej. 8 reps). Sube 1 repetición por semana hasta llegar al límite superior (ej. 12-15 reps) manteniendo RIR 2.</p>
+    <!-- ==================== PESTAÑA 5: PERFIL & CONFIGURACIÓN ==================== -->
+    <section id="tab-perfil" class="tab-content hidden space-y-4">
+      <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-4">
+        <div class="flex items-center space-x-3 pb-3 border-b border-slate-800">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-sky-500/20">
+            <i data-lucide="user" class="w-6 h-6"></i>
           </div>
-
-          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-            <p class="text-xs font-bold text-cyan-400">2. Control del Tempo (Tensión Muscular)</p>
-            <p class="text-xs text-slate-300">Tarda 3 segundos en la fase de bajada (excéntrica) y haz una pausa de 1 segundo en la posición de máxima tensión antes de subir.</p>
-          </div>
-
-          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-            <p class="text-xs font-bold text-emerald-400">3. RIR (Repeticiones en Reserva)</p>
-            <p class="text-xs text-slate-300">Termina cada serie sintiendo que podrías haber realizado 2 o 3 repeticiones adicionales con buena técnica. <strong>Nunca vayas al fallo muscular</strong> para no sobrecargar los tendones del codo.</p>
-          </div>
-
-          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-            <p class="text-xs font-bold text-amber-400">4. ¿Cuándo el peso queda muy liviano?</p>
-            <p class="text-xs text-slate-300">Si superas las 15-20 repeticiones sin ningún esfuerzo, no sigas haciendo repeticiones infinitas. Pasa a una variante unilateral (a una sola pierna o un solo brazo).</p>
-          </div>
-
-          <div class="p-3 rounded-xl bg-rose-950/20 border border-rose-800/40 space-y-1">
-            <p class="text-xs font-bold text-rose-400 flex items-center space-x-1">
-              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-              <span>Criterio de Parada e Higiene de Codo</span>
-            </p>
-            <p class="text-xs text-slate-300">Si sientes una molestia punzante mayor a 3/10 en el codo durante o después de un ejercicio, detén la ejecución de ese movimiento o cambia a la variante fácil sugerida.</p>
+          <div>
+            <h2 id="profile-display-name" class="text-base font-bold text-white">Usuario FitDumbbell</h2>
+            <p class="text-xs text-slate-400">Jugador de Pádel - Objetivos de Salud & Fuerza</p>
           </div>
         </div>
+
+        <form onsubmit="saveProfile(event)" class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Nombre</label>
+              <input type="text" id="prof-name" value="Jugador Pádel" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-sky-500 focus:outline-none min-h-[44px]">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Edad (Años)</label>
+              <input type="number" id="prof-age" value="40" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-sky-500 focus:outline-none min-h-[44px]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Estatura (cm)</label>
+              <input type="number" id="prof-height" value="175" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-500 focus:outline-none min-h-[44px]">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Peso Inicial (kg)</label>
+              <input type="number" step="0.1" id="prof-initial-weight" value="85.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-500 focus:outline-none min-h-[44px]">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Peso Meta (kg)</label>
+              <input type="number" step="0.1" id="prof-target-weight" value="78.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono focus:border-sky-500 focus:outline-none min-h-[44px]">
+            </div>
+          </div>
+
+          <!-- Barra de Progreso Hacia la Meta -->
+          <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-slate-400">Progreso de Peso</span>
+              <span id="profile-progress-text" class="text-sky-400 font-mono">0%</span>
+            </div>
+            <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+              <div id="profile-progress-bar" class="h-full bg-gradient-to-r from-sky-500 to-emerald-400 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-sky-600/30 transition-all min-h-[44px]">
+            Guardar Cambios de Perfil
+          </button>
+        </form>
       </div>
     </section>
 
   </main>
 
-  <!-- WIDGET FLOTANTE: CRONÓMETRO DE DESCANSO -->
-  <div id="rest-timer-widget" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 glass-header border border-blue-500/40 px-4 py-2.5 rounded-full shadow-2xl flex items-center space-x-3 hidden">
-    <div class="flex items-center space-x-2">
-      <i data-lucide="timer" class="w-4 h-4 text-blue-400 animate-pulse"></i>
-      <span class="text-xs font-medium text-slate-300">Descanso:</span>
-      <span id="timer-display" class="text-sm font-bold font-mono text-white">01:30</span>
+  <!-- ==================== WIDGET FLOTANTE: TEMPORIZADOR DE DESCANSO 60S ==================== -->
+  <div id="rest-timer-widget" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md glass-header border border-sky-500/50 p-3 rounded-2xl shadow-2xl flex items-center justify-between hidden transition-all">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/40 flex items-center justify-center font-bold pulse-ring">
+        <i data-lucide="timer" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Descanso Activo</p>
+        <p id="timer-display" class="text-lg font-bold font-mono text-white leading-none">01:00</p>
+      </div>
     </div>
-    <div class="flex items-center space-x-1">
-      <button onclick="addRestTime(15)" class="px-2 py-1 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700">+15s</button>
-      <button onclick="stopTimer()" class="px-2 py-1 text-[10px] font-bold bg-rose-900/80 hover:bg-rose-800 text-rose-200 rounded-lg border border-rose-700">Saltar</button>
+    <div class="flex items-center space-x-1.5">
+      <button onclick="addRestTime(15)" class="px-3 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 min-h-[40px]">+15s</button>
+      <button onclick="stopRestTimer()" class="px-3 py-2 text-xs font-bold bg-rose-950/80 hover:bg-rose-900 text-rose-200 rounded-xl border border-rose-800 min-h-[40px]">Saltar</button>
     </div>
   </div>
 
-  <!-- SCRIPT DE LÓGICA INTERACTIVA DE LA APLICACIÓN -->
+  <!-- ==================== MODAL DE FINALIZACIÓN DE SESIÓN ==================== -->
+  <div id="finish-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="glass-card bg-slate-900 border border-slate-700 rounded-3xl p-5 max-w-md w-full space-y-4 shadow-2xl animate-in fade-in zoom-in duration-200">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="trophy" class="w-6 h-6 text-amber-400"></i>
+          <h3 class="text-base font-bold text-white">¡Sesión Completada!</h3>
+        </div>
+        <button onclick="closeFinishModal()" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 space-y-1 text-center">
+        <p class="text-[11px] text-slate-400 uppercase font-bold">Tiempo Total Ejercitado</p>
+        <p id="modal-total-time" class="text-2xl font-bold font-mono text-sky-400">00:00:00</p>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Esfuerzo Percibido General (RPE 1-10)</label>
+          <select id="modal-rpe" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-sky-500 min-h-[44px]">
+            <option value="6">6 - Muy suave / Cómodo</option>
+            <option value="7" selected>7 - Moderado (RIR 3 conservado)</option>
+            <option value="8">8 - Exigente (RIR 2 cumplido)</option>
+            <option value="9">9 - Cerca del límite (RIR 1)</option>
+            <option value="10">10 - Esfuerzo Máximo</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Estado / Molestia de Codo (0-5)</label>
+          <select id="modal-elbow" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-sky-500 min-h-[44px]">
+            <option value="0" selected>0 - Cero molestias / Excelente</option>
+            <option value="1">1 - Sensación mínima de rigidez</option>
+            <option value="2">2 - Molestia leve (no impide ejercicio)</option>
+            <option value="3">3 - Molestia notoria (requiere reducir peso)</option>
+            <option value="4">4 - Dolor punzante (parar)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Notas de la Sesión</label>
+          <textarea id="modal-notes" rows="2" placeholder="Sensaciones, pádel, energía..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"></textarea>
+        </div>
+      </div>
+
+      <div class="pt-2 flex space-x-2">
+        <button onclick="closeFinishModal()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl min-h-[44px]">
+          Cancelar
+        </button>
+        <button onclick="saveSessionWorkout()" class="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 min-h-[44px]">
+          Confirmar & Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MENÚ DE NAVEGACIÓN INFERIOR iOS NATIVO ==================== -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 glass-header border-t border-slate-800/80 px-2 py-1.5 flex justify-around items-center">
+    <button onclick="switchTab('tab-entrenamiento')" id="nav-entrenamiento" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 text-sky-400 transition-all min-h-[48px]">
+      <i data-lucide="dumbbell" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold mt-1">Rutina</span>
+    </button>
+    <button onclick="switchTab('tab-calendario')" id="nav-calendario" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-slate-200 transition-all min-h-[48px]">
+      <i data-lucide="calendar" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold mt-1">Pádel</span>
+    </button>
+    <button onclick="switchTab('tab-peso')" id="nav-peso" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-slate-200 transition-all min-h-[48px]">
+      <i data-lucide="trending-up" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold mt-1">Peso</span>
+    </button>
+    <button onclick="switchTab('tab-historial')" id="nav-historial" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-slate-200 transition-all min-h-[48px]">
+      <i data-lucide="history" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold mt-1">Historial</span>
+    </button>
+    <button onclick="switchTab('tab-perfil')" id="nav-perfil" class="nav-btn flex-1 flex flex-col items-center justify-center py-1.5 text-slate-400 hover:text-slate-200 transition-all min-h-[48px]">
+      <i data-lucide="user" class="w-5 h-5"></i>
+      <span class="text-[10px] font-bold mt-1">Perfil</span>
+    </button>
+  </nav>
+
+  <!-- LÓGICA COMPLETA DE LA APLICACIÓN -->
   <script>
-    // BASE DE DATOS COMPLETA DE LA RUTINA DE 4 DÍAS (5 EJERCICIOS EXACTOS POR DÍA)
+    // PROGRAMA COMPLETO DE ENTRENAMIENTO (4 DÍAS DE 5 EJERCICIOS EXACTOS)
     const workoutProgram = {
       1: {
         tag: "Día 1",
         title: "Torso A (Fuerza e Impacto Calórico)",
-        desc: "Empujes y tracciones con agarre neutro para proteger la articulación del codo.",
+        desc: "Empujes y tracciones con agarre neutro para proteger el codo.",
         exercises: [
           {
             id: "ex_1_1",
             name: "Press de Pecho en Suelo (Floor Press)",
             muscles: "Pectoral, Tríceps, Deltoides Anterior",
-            material: "2 Mancuernas de 7,5 kg",
+            material: "2 Mancuernas de 7.5 kg",
             series: 3,
             reps: "8 - 12",
             rir: "2",
-            rest: "90s",
-            tech: "Tumbado boca arriba en el suelo con rodillas dobladas. Baja los codos en un ángulo de 45° respecto al cuerpo hasta tocar suavemente el suelo.",
-            errors: "Abrir los codos a 90° (daña el hombro) o golpear fuerte los codos contra el suelo.",
-            easy: "Sin peso (Flexiones en suelo con rodillas) o 1 mancuerna tomada con ambas manos."
+            rest: 60,
+            tech: "Tumbado boca arriba en el suelo con rodillas dobladas. Baja codos a 45° hasta rozar el suelo suavemente.",
+            errors: "Abrir codos a 90° o golpear fuerte contra el suelo.",
+            easy: "Sin peso (Flexiones apoyando rodillas)."
           },
           {
             id: "ex_1_2",
             name: "Remo Unilateral Apoyado en Suelo / Rodilla",
             muscles: "Dorsal Ancho, Redondo Mayor, Bíceps",
-            material: "1 Mancuerna de 7,5 kg",
+            material: "1 Mancuerna de 7.5 kg",
             series: 3,
-            reps: "10 - 12 por lado",
+            reps: "10 - 12 / lado",
             rir: "2",
-            rest: "75s",
-            tech: "En posición de zancada sobre el suelo, apoya el antebrazo en la rodilla delantera. Tracciona la mancuerna hacia la cadera llevando el codo atrás.",
-            errors: "Rotar en exceso el tronco o tirar del peso usando únicamente el bíceps.",
-            easy: "Reducir recorrido o apoyar la mano libre completamente en el suelo."
+            rest: 60,
+            tech: "Posición de zancada en suelo, apoya antebrazo en rodilla delantera. Tracciona mancuerna a la cadera.",
+            errors: "Rotar en exceso el tronco o tirar solo con el bíceps.",
+            easy: "Reducir recorrido o apoyar la mano en el suelo."
           },
           {
             id: "ex_1_3",
             name: "Press Militar Neutro de Pie",
             muscles: "Deltoides, Tríceps, EscápuIas",
-            material: "2 Mancuernas de 7,5 kg",
+            material: "2 Mancuernas de 7.5 kg",
             series: 3,
             reps: "8 - 10",
             rir: "2-3",
-            rest: "90s",
-            tech: "De pie con palmas mirándose (agarre neutro, protege el codo). Empuja las mancuernas verticalmente sobre la cabeza activando el abdomen.",
-            errors: "Arquear la espalda baja excesivamente para empujar.",
-            easy: "Hacerlo sentado erguido en el suelo o realizarlo a 1 solo brazo alternado."
+            rest: 60,
+            tech: "Palmas mirándose (agarre neutro). Empuja mancuernas sobre la cabeza activando el abdomen.",
+            errors: "Arquear la espalda baja excesivamente.",
+            easy: "Hacerlo sentado erguido en el suelo."
           },
           {
             id: "ex_1_4",
-            name: "Remo Tipo Pájaro Tumbado Boca Abajo (Prone Y-T)",
+            name: "Remo Tipo Pájaro Tumbado (Prone Y-T)",
             muscles: "Deltoides Posterior, Romboides, Trapecio",
             material: "Peso Corporal",
             series: 3,
             reps: "12 - 15",
             rir: "2",
-            rest: "60s",
-            tech: "Tumbado boca abajo en el suelo, despega ligeramente el pecho. Eleva brazos extendidos formando una 'T' o 'Y' juntando las escápulas.",
+            rest: 60,
+            tech: "Boca abajo en el suelo. Eleva brazos extendidos formando una 'T' o 'Y' juntando escápulas.",
             errors: "Tirar con el cuello o forzar la zona lumbar.",
-            easy: "Apoyar la frente sobre una toalla doblada sin despegar el pecho del suelo."
+            easy: "Apoyar la frente sobre una toalla doblada."
           },
           {
             id: "ex_1_5",
@@ -415,58 +609,58 @@
             muscles: "Core, Recto Abdominal, Estabilizadores",
             material: "Peso Corporal",
             series: 3,
-            reps: "10 toques por lado",
+            reps: "10 / lado",
             rir: "2",
-            rest: "60s",
-            tech: "En posición de flexión alta. Mantén la cadera fija y toca suavemente el hombro opuesto con una mano sin balancearte.",
+            rest: 60,
+            tech: "Flexión alta. Mantén cadera fija y toca suavemente el hombro opuesto con una mano.",
             errors: "Balancear la cadera de lado a lado.",
-            easy: "Apoyar las rodillas en el suelo para reducir la palanca."
+            easy: "Apoyar las rodillas en el suelo."
           }
         ]
       },
       2: {
         tag: "Día 2",
-        title: "Pierna & Cadera A (Fuerza Inferior)",
-        desc: "Trabajo pesado de piernas +48 hs antes de la liga de pádel del jueves.",
+        title: "Pierna & Cadera A (Fuerza Pre-Pádel)",
+        desc: "Trabajo pesado de piernas +48h antes de la liga de pádel del jueves.",
         exercises: [
           {
             id: "ex_2_1",
             name: "Sentadilla Goblet",
             muscles: "Cuádriceps, Glúteos, Core",
-            material: "1 Mancuerna de 7,5 kg",
+            material: "1 Mancuerna de 7.5 kg",
             series: 3,
             reps: "10 - 12",
             rir: "2",
-            rest: "90s",
-            tech: "Sostén la mancuerna en vertical pegada al pecho. Baja la cadera manteniendo los talones pegados al suelo y la espalda neutra.",
-            errors: "Colapsar rodillas hacia adentro o levantar los talones.",
+            rest: 60,
+            tech: "Mancuerna vertical pegada al pecho. Baja la cadera manteniendo talones en el suelo y espalda neutra.",
+            errors: "Colapsar rodillas hacia adentro o levantar talones.",
             easy: "Sentadilla libre solo con peso corporal."
           },
           {
             id: "ex_2_2",
             name: "Peso Muerto Rumano con 2 Mancuernas",
             muscles: "Isquiotibiales, Glúteos, Espalda Baja",
-            material: "2 Mancuernas de 7,5 kg",
+            material: "2 Mancuernas (15 kg total)",
             series: 3,
             reps: "10 - 12",
             rir: "2",
-            rest: "90s",
-            tech: "Rodillas ligeramente flexionadas. Lleva la cadera hacia atrás como tocando la pared trasera. Baja las mancuernas rozando las piernas.",
+            rest: 60,
+            tech: "Rodillas semiflexionadas. Lleva la cadera atrás como rozando la pared trasera. Baja rozando piernas.",
             errors: "Encorvar la espalda o doblar demasiado las rodillas.",
-            easy: "Usar 1 sola mancuerna tomada horizontalmente con ambas manos."
+            easy: "Usar 1 sola mancuerna con ambas manos."
           },
           {
             id: "ex_2_3",
             name: "Zancadas Traseras (Reverse Lunges)",
             muscles: "Cuádriceps, Glúteos, Estabilidad",
-            material: "Peso Corporal o 2x 7,5 kg",
+            material: "2 Mancuernas (15 kg total) / Peso Corp.",
             series: 3,
-            reps: "8 - 10 por pierna",
+            reps: "8 - 10 / pierna",
             rir: "2",
-            rest: "75s",
-            tech: "Paso amplio hacia atrás, bajando la rodilla trasera cerca del suelo sin golpear. Mantén el torso erguido o ligeramente inclinado.",
-            errors: "Paso demasiado corto que sobrecarga la rodilla delantera.",
-            easy: "Hacerlas sin mancuernas (solo peso corporal)."
+            rest: 60,
+            tech: "Paso amplio hacia atrás, bajando la rodilla cerca del suelo. Torso erguido.",
+            errors: "Paso demasiado corto que sobrecarga la rodilla.",
+            easy: "Zancadas sin mancuernas (peso corporal)."
           },
           {
             id: "ex_2_4",
@@ -474,12 +668,12 @@
             muscles: "Glúteo Mayor, Isquiotibiales",
             material: "Peso Corporal",
             series: 3,
-            reps: "10 - 12 por lado",
+            reps: "10 - 12 / lado",
             rir: "2",
-            rest: "60s",
-            tech: "Boca arriba, apoya la planta de un pie y extiende la otra pierna. Eleva la cadera apretando el glúteo arriba durante 1 segundo.",
-            errors: "Empujar arqueando la zona lumbar en lugar de usar el glúteo.",
-            easy: "Puente de glúteo apoyando ambas piernas al mismo tiempo."
+            rest: 60,
+            tech: "Boca arriba, apoya un pie y extiende el otro. Eleva cadera apretando glúteo arriba 1s.",
+            errors: "Arquear la zona lumbar en lugar de usar glúteo.",
+            easy: "Puente de glúteo apogando ambos pies."
           },
           {
             id: "ex_2_5",
@@ -487,12 +681,12 @@
             muscles: "Core Profundo, Transverso",
             material: "Peso Corporal",
             series: 3,
-            reps: "10 por lado",
+            reps: "10 / lado",
             rir: "2",
-            rest: "60s",
-            tech: "Tumbado boca arriba con brazos y piernas en 90°. Extiende brazo derecho y pierna izquierda rozando el suelo, manteniendo lumbar pegada.",
+            rest: 60,
+            tech: "Boca arriba con brazos y piernas en 90°. Extiende brazo y pierna contraria sin despegar la lumbar.",
             errors: "Arquear la espalda baja despegándola del suelo.",
-            easy: "Mover únicamente las piernas manteniendo brazos fijos."
+            easy: "Mover únicamente las piernas con brazos fijos."
           }
         ]
       },
@@ -509,49 +703,49 @@
             series: 3,
             reps: "8 - 12",
             rir: "2",
-            rest: "75s",
-            tech: "Cuerpo en línea recta de la cabeza a los pies. Baja flexionando codos a 45° hasta rozar el suelo con el pecho.",
-            errors: "Dejar caer la cadera o abrir los codos excesivamente.",
-            easy: "Apoyar las rodillas en el suelo."
+            rest: 60,
+            tech: "Cuerpo en línea recta. Baja codos a 45° hasta rozar el suelo con el pecho.",
+            errors: "Dejar caer la cadera o abrir codos excesivamente.",
+            easy: "Apoyar rodillas en el suelo."
           },
           {
             id: "ex_3_2",
             name: "Remo Inclinado Neutro con 2 Mancuernas",
             muscles: "Dorsal, Trapecio, Romboides",
-            material: "2 Mancuernas de 7,5 kg",
+            material: "2 Mancuernas (15 kg total)",
             series: 3,
             reps: "10 - 12",
             rir: "2",
-            rest: "75s",
-            tech: "Flexiona cadera a 45° con espalda neutra. Tracciona ambas mancuernas hacia los costados en agarre neutro (palmas mirándose).",
+            rest: 60,
+            tech: "Flexiona cadera a 45° con espalda neutra. Tracciona mancuernas en agarre neutro.",
             errors: "Usar inercia del cuerpo o encorvar la espalda.",
-            easy: "Realizarlo de forma unilateral apoyando la mano libre en el suelo."
+            easy: "Realizarlo apoyando una mano libre en el suelo."
           },
           {
             id: "ex_3_3",
             name: "Elevaciones Laterales de Hombro",
             muscles: "Deltoides Lateral",
-            material: "1 Mancuerna / Peso Corporal",
+            material: "1 Mancuerna 7.5 kg / Peso Corp.",
             series: 3,
-            reps: "12 - 15 por lado",
+            reps: "12 - 15 / lado",
             rir: "2",
-            rest: "60s",
-            tech: "Eleva el brazo en el plano de la escápula hasta la altura del hombro de forma muy fluida y controlada.",
-            errors: "Encoger el cuello o usar balanceo de cadera.",
-            easy: "Controlar la bajada en 4 segundos sin peso o con botella de agua."
+            rest: 60,
+            tech: "Eleva el brazo en el plano de la escápula hasta la altura del hombro de forma fluida.",
+            errors: "Encoger el cuello o usar balanceo.",
+            easy: "Controlar la bajada en 4s con botella de agua."
           },
           {
             id: "ex_3_4",
-            name: "Curl de Bíceps Neutro (Hammer Curl)",
+            name: "Curl de Bíceps Martillo Neutro",
             muscles: "Braquiorradial, Bíceps Braquial",
-            material: "2 Mancuernas de 7,5 kg",
+            material: "2 Mancuernas (15 kg total)",
             series: 3,
             reps: "10 - 12",
             rir: "2-3",
-            rest: "60s",
-            tech: "Palmas mirándose. Sube sin mover los codos de los costados y baja suavemente en 3 segundos. Evita bloqueos bruscos abajo.",
-            errors: "Balancear el torso o bloquear el codo bruscamente abajo.",
-            easy: "Hacerlo alternando brazos (un brazo primero, luego el otro)."
+            rest: 60,
+            tech: "Palmas mirándose. Sube sin mover codos de los costados y baja suavemente en 3s.",
+            errors: "Balancear el torso o extender codos bruscamente.",
+            easy: "Hacerlo alternando un brazo a la vez."
           },
           {
             id: "ex_3_5",
@@ -559,58 +753,58 @@
             muscles: "Oblicuos, Estabilizadores de Cadera",
             material: "Peso Corporal",
             series: 3,
-            reps: "20 - 30 segs por lado",
+            reps: "20 - 30 segs / lado",
             rir: "2",
-            rest: "60s",
-            tech: "Apoya el antebrazo bajo el hombro. Mantén el cuerpo en línea recta sin dejar caer la cadera hacia el suelo.",
-            errors: "Rotar el pecho hacia abajo o hundir la cadera.",
+            rest: 60,
+            tech: "Apoya antebrazo bajo el hombro. Mantén el cuerpo en línea recta sin hundir la cadera.",
+            errors: "Rotar el pecho hacia abajo o hundir cadera.",
             easy: "Apoyar las rodillas flexionadas en el suelo."
           }
         ]
       },
       4: {
         tag: "Día 4",
-        title: "Pierna & Unilateral B (Transferencia al Pádel)",
-        desc: "Enfoque en desplazamientos laterales, estabilidad unipodal y potencia de piernas.",
+        title: "Pierna & Unilateral B (Transferencia Pádel)",
+        desc: "Enfoque en desplazamientos laterales, estabilidad unipodal y potencia.",
         exercises: [
           {
             id: "ex_4_1",
-            name: "Sentadilla Split (Zancada Estática)",
+            name: "Sentadilla Split Estática",
             muscles: "Cuádriceps, Glúteos",
-            material: "1 o 2 Mancuernas de 7,5 kg",
+            material: "1 Mancuerna 7.5 kg / Peso Corp.",
             series: 3,
-            reps: "10 por pierna",
+            reps: "10 / pierna",
             rir: "2",
-            rest: "75s",
-            tech: "Sin dar pasos, mantén una pierna adelante y otra atrás. Baja verticalmente flexionando ambas rodillas a 90° y vuelve a subir.",
-            errors: "Inclinar el torso excesivamente adelante o levantar el talón frontal.",
-            easy: "Peso corporal sin cargas."
+            rest: 60,
+            tech: "Sin dar pasos, mantén una pierna adelante y otra atrás. Baja ambas rodillas a 90°.",
+            errors: "Inclinar el torso adelante o levantar el talón frontal.",
+            easy: "Sentadilla split sin peso."
           },
           {
             id: "ex_4_2",
             name: "Peso Muerto Rumano Unilateral (B-Stance)",
             muscles: "Isquiotibiales, Glúteo Medio",
-            material: "1 Mancuerna de 7,5 kg",
+            material: "1 Mancuerna de 7.5 kg",
             series: 3,
-            reps: "10 por pierna",
+            reps: "10 / pierna",
             rir: "2",
-            rest: "75s",
-            tech: "Apoya el 90% del peso en la pierna delantera; la trasera apoya solo la punta como 'rueda de repuesto'. Lleva la cadera atrás.",
+            rest: 60,
+            tech: "90% del peso en pierna delantera; trasera apoya solo la punta. Lleva cadera atrás.",
             errors: "Cargar peso en la pierna trasera.",
-            easy: "Peso muerto rumano convencional a 2 piernas."
+            easy: "Peso muerto rumano a 2 piernas."
           },
           {
             id: "ex_4_3",
-            name: "Elevación de Gemelos Unilateral a 1 Pierna",
+            name: "Elevación de Gemelos Unilateral",
             muscles: "Gastrocnemio, Sóleo (Tobillos Pádel)",
             material: "Peso Corporal",
             series: 3,
-            reps: "12 - 15 por lado",
+            reps: "12 - 15 / lado",
             rir: "2",
-            rest: "60s",
-            tech: "Apoyado en pared para equilibrio, ponte en puntas de pie a una pierna. Pausa 1 segundo arriba y desciende despacio.",
-            errors: "Rebotar sin control muscular abajo.",
-            easy: "Elevación con ambas piernas al mismo tiempo."
+            rest: 60,
+            tech: "Apoyado en pared para equilibrio, ponte en puntas de pie a 1 pierna. Pausa 1s arriba.",
+            errors: "Rebotar sin control abajo.",
+            easy: "Elevación a dos piernas al mismo tiempo."
           },
           {
             id: "ex_4_4",
@@ -618,11 +812,11 @@
             muscles: "Glúteo Medio, Rotadores de Cadera",
             material: "Peso Corporal",
             series: 3,
-            reps: "12 - 15 por lado",
+            reps: "12 - 15 / lado",
             rir: "2",
-            rest: "45s",
-            tech: "Tumbado de lado con rodillas a 90°. Abre la rodilla superior manteniendo los pies juntos y la cadera fija.",
-            errors: "Rotar toda la pelvis hacia atrás.",
+            rest: 60,
+            tech: "De lado con rodillas a 90°. Abre la rodilla superior manteniendo pies juntos y cadera fija.",
+            errors: "Rotar la pelvis hacia atrás.",
             easy: "Reducir el rango de apertura."
           },
           {
@@ -631,12 +825,12 @@
             muscles: "Core, Erectores Espinales, Glúteo",
             material: "Peso Corporal",
             series: 3,
-            reps: "10 por lado",
+            reps: "10 / lado",
             rir: "2",
-            rest: "60s",
-            tech: "En cuadrupedia, extiende brazo derecho y pierna izquierda simultáneamente sin mover la espalda.",
-            errors: "Arquear la espalda o rotar la cadera al extender.",
-            easy: "Mover alternadamente solo piernas o solo brazos."
+            rest: 60,
+            tech: "En cuadrupedia, extiende brazo y pierna contraria simultáneamente sin mover la espalda.",
+            errors: "Arquear la espalda o rotar cadera.",
+            easy: "Mover solo piernas o solo brazos."
           }
         ]
       }
@@ -644,48 +838,113 @@
 
     // ESTADO DE LA APLICACIÓN
     let activeDay = 1;
-    let timerInterval = null;
-    let timerSeconds = 0;
+    let isSessionActive = false;
+    let sessionSeconds = 0;
+    let sessionTimerInterval = null;
+
+    let activeExerciseId = null;
+    let exerciseSecondsMap = {};
+    let exerciseTimerInterval = null;
+
+    let completedSetsMap = {}; // { ex_1_1: [true, false, false] }
+
+    let restTimerInterval = null;
+    let restTimerSeconds = 60;
+
+    let weightChartInstance = null;
+    let statsChartInstance = null;
 
     // INICIALIZACIÓN
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
+      initDefaultData();
       renderDay(1);
-      loadHistory();
+      loadProfileUI();
+      loadHistoryUI();
+      loadWeightUI();
+      document.getElementById('input-weight-date').valueAsDate = new Date();
     });
 
-    // CAMBIO DE PESTAÑAS
+    // DATOS DE EJEMPLO INICIALES EN LOCALSTORAGE
+    function initDefaultData() {
+      if(!localStorage.getItem('fit_profile')) {
+        const defaultProfile = {
+          name: "Jugador Pádel",
+          age: 40,
+          height: 175,
+          initialWeight: 85.0,
+          targetWeight: 78.0
+        };
+        localStorage.setItem('fit_profile', JSON.stringify(defaultProfile));
+      }
+
+      if(!localStorage.getItem('fit_weights')) {
+        const defaultWeights = [
+          { id: 1, date: "2026-09-25", weight: 85.0 },
+          { id: 2, date: "2026-10-02", weight: 84.2 },
+          { id: 3, date: "2026-10-09", weight: 83.5 },
+          { id: 4, date: "2026-10-16", weight: 82.8 }
+        ];
+        localStorage.setItem('fit_weights', JSON.stringify(defaultWeights));
+      }
+
+      if(!localStorage.getItem('fit_logs')) {
+        const defaultLogs = [
+          {
+            id: 101,
+            date: "16 oct 2026, 08:30",
+            dayTag: "Día 1",
+            dayTitle: "Torso A",
+            duration: "41 min 20s",
+            rpe: "7",
+            elbow: "0",
+            notes: "Buen ritmo de empujes, codo responde perfectamente con agarre neutro.",
+            exercises: [
+              { name: "Press de Pecho en Suelo", series: "3", reps: "10-12", load: "7.5kg" },
+              { name: "Remo Unilateral en Suelo", series: "3", reps: "10-12", load: "7.5kg" }
+            ]
+          }
+        ];
+        localStorage.setItem('fit_logs', JSON.stringify(defaultLogs));
+      }
+    }
+
+    // CAMBIO DE PESTAÑAS Y ADAPTACIÓN CHART.JS
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('ios-btn-active');
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-sky-400');
         btn.classList.add('text-slate-400');
       });
 
       document.getElementById(tabId).classList.remove('hidden');
       const activeNavBtn = document.getElementById('nav-' + tabId.replace('tab-', ''));
       if(activeNavBtn) {
-        activeNavBtn.classList.add('ios-btn-active');
+        activeNavBtn.classList.add('text-sky-400');
         activeNavBtn.classList.remove('text-slate-400');
+      }
+
+      if(tabId === 'tab-peso') {
+        renderCharts();
       }
     }
 
-    // SELECCIÓN DE DÍA DE ENTRENAMIENTO
+    // SELECCIÓN DE DÍA
     function selectDay(dayNum) {
       activeDay = dayNum;
       document.querySelectorAll('.day-selector-btn').forEach((btn, idx) => {
         if((idx + 1) === dayNum) {
-          btn.classList.add('border-blue-500/80', 'bg-blue-600/20');
+          btn.classList.add('border-sky-500/80', 'bg-sky-600/20');
           btn.classList.remove('hover:bg-slate-800/50');
         } else {
-          btn.classList.remove('border-blue-500/80', 'bg-blue-600/20');
+          btn.classList.remove('border-sky-500/80', 'bg-sky-600/20');
           btn.classList.add('hover:bg-slate-800/50');
         }
       });
       renderDay(dayNum);
     }
 
-    // RENDERIZAR LOS 5 EJERCICIOS DEL DÍA SELECCIONADO
+    // RENDERIZAR LOS 5 EJERCICIOS DEL DÍA
     function renderDay(dayNum) {
       const data = workoutProgram[dayNum];
       document.getElementById('day-tag').innerText = data.tag;
@@ -696,60 +955,74 @@
       container.innerHTML = '';
 
       data.exercises.forEach((ex, index) => {
+        if(!completedSetsMap[ex.id]) {
+          completedSetsMap[ex.id] = [false, false, false];
+        }
+        if(!exerciseSecondsMap[ex.id]) {
+          exerciseSecondsMap[ex.id] = 0;
+        }
+
+        const isExActive = (activeExerciseId === ex.id);
+        const exTimeFormatted = formatTimer(exerciseSecondsMap[ex.id]);
+
         const exCard = document.createElement('div');
-        exCard.className = 'glass-card rounded-2xl p-4 border border-slate-800 space-y-3';
+        exCard.id = `card_${ex.id}`;
+        exCard.className = `glass-card rounded-2xl p-4 border transition-all ${isExActive ? 'glass-card-active border-sky-500/60' : 'border-slate-800'} space-y-3`;
+        
         exCard.innerHTML = `
           <div class="flex items-start justify-between">
             <div class="flex items-center space-x-2.5">
-              <span class="w-6 h-6 rounded-lg bg-blue-600/30 text-blue-400 border border-blue-500/30 flex items-center justify-center text-xs font-bold font-mono">
+              <span class="w-7 h-7 rounded-xl bg-sky-600/30 text-sky-400 border border-sky-500/30 flex items-center justify-center text-xs font-bold font-mono">
                 ${index + 1}
               </span>
               <div>
                 <h3 class="text-sm font-bold text-white leading-tight">${ex.name}</h3>
-                <p class="text-[11px] text-slate-400">${ex.muscles}</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">${ex.muscles}</p>
               </div>
             </div>
-            <button onclick="startTimer('${ex.rest}')" class="text-[11px] font-semibold text-blue-400 bg-slate-900 border border-slate-700 hover:border-blue-500 px-2.5 py-1 rounded-lg flex items-center space-x-1">
-              <i data-lucide="clock" class="w-3 h-3"></i>
-              <span>${ex.rest}</span>
+
+            <!-- Botón de Iniciar/Pausar Ejercicio Individual -->
+            <button onclick="toggleExerciseTimer('${ex.id}')" id="btn_timer_${ex.id}" class="text-xs font-semibold ${isExActive ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-900 text-sky-400 border-slate-700 hover:border-sky-500'} border px-3 py-1.5 rounded-xl flex items-center space-x-1 min-h-[40px] transition-all">
+              <i data-lucide="${isExActive ? 'pause' : 'play'}" class="w-3.5 h-3.5"></i>
+              <span id="ex_timer_text_${ex.id}" class="font-mono">${isExActive ? 'Pausar ' + exTimeFormatted : (exerciseSecondsMap[ex.id] > 0 ? exTimeFormatted : 'Iniciar')}</span>
             </button>
           </div>
 
-          <!-- Badges informativos -->
+          <!-- Badges de Carga y Reps -->
           <div class="flex flex-wrap gap-1.5 text-[10px] font-medium">
-            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">📦 ${ex.material}</span>
-            <span class="px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/50">🔢 ${ex.series} series x ${ex.reps}</span>
-            <span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/50">⚡ RIR ${ex.rir}</span>
+            <span class="px-2 py-0.5 rounded-lg bg-slate-800/90 text-slate-300 border border-slate-700">📦 ${ex.material}</span>
+            <span class="px-2 py-0.5 rounded-lg bg-sky-950 text-sky-300 border border-sky-800/50">🔢 3 series x ${ex.reps}</span>
+            <span class="px-2 py-0.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-800/50">⚡ RIR ${ex.rir}</span>
           </div>
 
-          <!-- Detalles desplegables -->
-          <details class="text-xs text-slate-300 bg-slate-900/50 rounded-xl p-2.5 border border-slate-800/80">
-            <summary class="cursor-pointer font-bold text-blue-400 hover:text-blue-300 flex items-center justify-between text-[11px]">
-              <span>Técnica, Errores & Variante Fácil</span>
+          <!-- Fila Interactiva de Marcar Series Realizadas -->
+          <div class="pt-1">
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">Presiona cada serie al completarla (Inicia Descanso 60s):</p>
+            <div class="grid grid-cols-3 gap-2">
+              ${[0, 1, 2].map(sIdx => {
+                const isDone = completedSetsMap[ex.id][sIdx];
+                return `
+                  <button onclick="toggleSet('${ex.id}', ${sIdx})" id="set_btn_${ex.id}_${sIdx}" class="py-2.5 px-2 rounded-xl text-xs font-bold transition-all border flex items-center justify-center space-x-1 min-h-[44px] ${isDone ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/20' : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500'}">
+                    <i data-lucide="${isDone ? 'check-circle-2' : 'circle'}" class="w-3.5 h-3.5"></i>
+                    <span>Serie ${sIdx + 1}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Detalles Desplegables de Técnica -->
+          <details class="text-xs text-slate-300 bg-slate-900/60 rounded-xl p-2.5 border border-slate-800">
+            <summary class="cursor-pointer font-bold text-sky-400 hover:text-sky-300 flex items-center justify-between text-[11px]">
+              <span>Técnica & Variante Fácil</span>
               <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
             </summary>
-            <div class="mt-2 space-y-1.5 text-[11px] leading-relaxed pt-1 border-t border-slate-800">
+            <div class="mt-2 space-y-1.5 text-[11px] leading-relaxed pt-1.5 border-t border-slate-800/80">
               <p><strong class="text-slate-200">Técnica:</strong> ${ex.tech}</p>
-              <p><strong class="text-rose-400">Error común:</strong> ${ex.errors}</p>
+              <p><strong class="text-rose-400">Error a evitar:</strong> ${ex.errors}</p>
               <p><strong class="text-emerald-400">Variante más fácil:</strong> ${ex.easy}</p>
             </div>
           </details>
-
-          <!-- Input de Registro de Ejercicio -->
-          <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/60">
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-0.5">Series Hechas</label>
-              <input type="number" id="input_series_${ex.id}" value="${ex.series}" min="0" max="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-center text-white font-mono focus:border-blue-500 focus:outline-none">
-            </div>
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-0.5">Reps Reales</label>
-              <input type="text" id="input_reps_${ex.id}" placeholder="${ex.reps}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-center text-white font-mono focus:border-blue-500 focus:outline-none">
-            </div>
-            <div>
-              <label class="block text-[10px] text-slate-400 mb-0.5">Carga (kg)</label>
-              <input type="text" id="input_load_${ex.id}" value="${ex.material.includes('7,5') ? '7.5' : '0'}" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-center text-white font-mono focus:border-blue-500 focus:outline-none">
-            </div>
-          </div>
         `;
         container.appendChild(exCard);
       });
@@ -757,127 +1030,253 @@
       lucide.createIcons();
     }
 
-    // ALTERNAR MOSTRAR/OCULTAR CALENTAMIENTO
+    // TOGGLE CALENTAMIENTO
     function toggleWarmup() {
-      const card = document.getElementById('warmup-card');
-      card.classList.toggle('hidden');
+      document.getElementById('warmup-card').classList.toggle('hidden');
     }
 
-    // CRONÓMETRO DE DESCANSO
-    function startTimer(restStr) {
-      let secs = parseInt(restStr) || 60;
-      timerSeconds = secs;
-      
+    // CONTROL DEL CRONÓMETRO DE SESIÓN
+    function toggleSessionState() {
+      if(!isSessionActive) {
+        startSession();
+      } else {
+        pauseSession();
+      }
+    }
+
+    function startSession() {
+      isSessionActive = true;
+      document.getElementById('session-active-banner').classList.remove('hidden');
+      document.getElementById('session-status-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+      document.getElementById('session-badge-text').innerText = "⏸ Pausar";
+
+      if(!sessionTimerInterval) {
+        sessionTimerInterval = setInterval(() => {
+          sessionSeconds++;
+          document.getElementById('active-session-clock').innerText = formatTimer(sessionSeconds);
+        }, 1000);
+      }
+    }
+
+    function pauseSession() {
+      isSessionActive = false;
+      if(sessionTimerInterval) {
+        clearInterval(sessionTimerInterval);
+        sessionTimerInterval = null;
+      }
+      document.getElementById('session-status-dot').className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+      document.getElementById('session-badge-text').innerText = "▶ Reanudar";
+    }
+
+    // CONTROL DEL CRONÓMETRO INDIVIDUAL DE CADA EJERCICIO
+    function toggleExerciseTimer(exId) {
+      if(!isSessionActive) {
+        startSession();
+      }
+
+      if(activeExerciseId === exId) {
+        // Pausar
+        clearInterval(exerciseTimerInterval);
+        exerciseTimerInterval = null;
+        activeExerciseId = null;
+      } else {
+        // Cambiar de ejercicio activo
+        if(exerciseTimerInterval) clearInterval(exerciseTimerInterval);
+        activeExerciseId = exId;
+        
+        exerciseTimerInterval = setInterval(() => {
+          exerciseSecondsMap[exId] = (exerciseSecondsMap[exId] || 0) + 1;
+          const txtEl = document.getElementById(`ex_timer_text_${exId}`);
+          if(txtEl) txtEl.innerText = "Pausar " + formatTimer(exerciseSecondsMap[exId]);
+        }, 1000);
+      }
+      renderDay(activeDay);
+    }
+
+    // MARCAR SERIE COMO HECHA E INICIAR DESCANSO AUTOMÁTICO DE 60s
+    function toggleSet(exId, setIdx) {
+      if(!isSessionActive) {
+        startSession();
+      }
+
+      const isCurrentlyDone = completedSetsMap[exId][setIdx];
+      completedSetsMap[exId][setIdx] = !isCurrentlyDone;
+
+      // Renderizar UI del ejercicio
+      renderDay(activeDay);
+
+      // Si se acaba de completar la serie, disparar temporizador de descanso de 60 segundos
+      if(!isCurrentlyDone) {
+        startRestTimer(60);
+      }
+    }
+
+    // CRONÓMETRO DE DESCANSO DE 60S CON AUDIO Y VIBRACIÓN
+    function startRestTimer(secs) {
+      restTimerSeconds = secs;
       const widget = document.getElementById('rest-timer-widget');
       widget.classList.remove('hidden');
 
-      if(timerInterval) clearInterval(timerInterval);
+      if(restTimerInterval) clearInterval(restTimerInterval);
 
-      updateTimerDisplay();
+      updateRestTimerUI();
 
-      timerInterval = setInterval(() => {
-        timerSeconds--;
-        if(timerSeconds <= 0) {
-          clearInterval(timerInterval);
+      restTimerInterval = setInterval(() => {
+        restTimerSeconds--;
+        if(restTimerSeconds <= 0) {
+          clearInterval(restTimerInterval);
+          restTimerInterval = null;
           widget.classList.add('hidden');
-          alert('¡Tiempo de descanso completado! Pasa a la siguiente serie.');
+          triggerRestCompletionAlert();
         } else {
-          updateTimerDisplay();
+          updateRestTimerUI();
         }
       }, 1000);
     }
 
     function addRestTime(secs) {
-      timerSeconds += secs;
-      updateTimerDisplay();
+      restTimerSeconds += secs;
+      updateRestTimerUI();
     }
 
-    function stopTimer() {
-      if(timerInterval) clearInterval(timerInterval);
+    function stopRestTimer() {
+      if(restTimerInterval) clearInterval(restTimerInterval);
+      restTimerInterval = null;
       document.getElementById('rest-timer-widget').classList.add('hidden');
     }
 
-    function updateTimerDisplay() {
-      const mins = Math.floor(timerSeconds / 60);
-      const secs = timerSeconds % 60;
+    function updateRestTimerUI() {
+      const mins = Math.floor(restTimerSeconds / 60);
+      const secs = restTimerSeconds % 60;
       document.getElementById('timer-display').innerText = 
         `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
-    // GUARDAR ENTRENAMIENTO EN LOCALSTORAGE
-    function saveWorkout() {
+    // ALERTA SONORA (Web Audio API) Y VIBRACIÓN HÁPTICA
+    function triggerRestCompletionAlert() {
+      // Vibración táctil si soporta la API de Web
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+      }
+
+      // Tono suave usando Web Audio API
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if(AudioContext) {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2); // A5
+          gain.gain.setValueAtTime(0.25, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.6);
+        }
+      } catch(e) {
+        console.log("Audio no disponible", e);
+      }
+    }
+
+    // FINALIZAR SESIÓN
+    function promptFinishSession() {
+      document.getElementById('modal-total-time').innerText = formatTimer(sessionSeconds);
+      document.getElementById('finish-modal').classList.remove('hidden');
+    }
+
+    function closeFinishModal() {
+      document.getElementById('finish-modal').classList.add('hidden');
+    }
+
+    function saveSessionWorkout() {
       const dayData = workoutProgram[activeDay];
       const exLogs = dayData.exercises.map(ex => {
+        const doneSets = (completedSetsMap[ex.id] || []).filter(Boolean).length;
         return {
           name: ex.name,
-          series: document.getElementById(`input_series_${ex.id}`)?.value || ex.series,
-          reps: document.getElementById(`input_reps_${ex.id}`)?.value || ex.reps,
-          load: document.getElementById(`input_load_${ex.id}`)?.value || '0'
+          series: `${doneSets}/${ex.series}`,
+          reps: ex.reps,
+          load: ex.material.includes('7.5') ? '7.5kg' : (ex.material.includes('15') ? '15kg' : '0kg')
         };
       });
 
-      const rpe = document.getElementById('session-rpe').value;
-      const elbow = document.getElementById('session-elbow').value;
-      const notes = document.getElementById('session-notes').value;
+      const rpe = document.getElementById('modal-rpe').value;
+      const elbow = document.getElementById('modal-elbow').value;
+      const notes = document.getElementById('modal-notes').value;
 
       const logEntry = {
         id: Date.now(),
-        date: new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
         dayTag: dayData.tag,
         dayTitle: dayData.title,
-        exercises: exLogs,
+        duration: formatTimer(sessionSeconds),
         rpe: rpe,
         elbow: elbow,
-        notes: notes
+        notes: notes,
+        exercises: exLogs
       };
 
-      let history = JSON.parse(localStorage.getItem('fitdumbbell_logs') || '[]');
-      history.unshift(logEntry);
-      localStorage.setItem('fitdumbbell_logs', JSON.stringify(history));
+      let logs = JSON.parse(localStorage.getItem('fit_logs') || '[]');
+      logs.unshift(logEntry);
+      localStorage.setItem('fit_logs', JSON.stringify(logs));
 
-      alert('¡Entrenamiento guardado correctamente!');
-      loadHistory();
+      // Resetear estado de sesión
+      pauseSession();
+      sessionSeconds = 0;
+      completedSetsMap = {};
+      exerciseSecondsMap = {};
+      activeExerciseId = null;
+
+      closeFinishModal();
+      document.getElementById('session-active-banner').classList.add('hidden');
+      document.getElementById('session-badge-text').innerText = "▶ Iniciar Sesión";
+
+      renderDay(activeDay);
+      loadHistoryUI();
       switchTab('tab-historial');
     }
 
-    // CARGAR HISTORIAL EN LA PESTAÑA HISTORIAL
-    function loadHistory() {
+    // PESTAÑA HISTORIAL
+    function loadHistoryUI() {
       const container = document.getElementById('history-container');
-      const history = JSON.parse(localStorage.getItem('fitdumbbell_logs') || '[]');
+      const logs = JSON.parse(localStorage.getItem('fit_logs') || '[]');
 
-      if(history.length === 0) {
+      if(logs.length === 0) {
         container.innerHTML = `
           <div class="text-center py-8 text-slate-500 text-xs">
-            No tienes entrenamientos registrados aún. ¡Completa tu primer entrenamiento y guárdalo!
+            No tienes entrenamientos guardados. ¡Inicia una sesión y registra tu esfuerzo!
           </div>
         `;
         return;
       }
 
       container.innerHTML = '';
-      history.forEach(log => {
+      logs.forEach(log => {
         let elbowBadge = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
         if(parseInt(log.elbow) >= 2) elbowBadge = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
         if(parseInt(log.elbow) >= 4) elbowBadge = 'bg-rose-500/20 text-rose-300 border-rose-500/30';
 
         const card = document.createElement('div');
-        card.className = 'glass-card rounded-xl p-3 border border-slate-800 space-y-2 text-xs';
+        card.className = 'glass-card rounded-2xl p-3.5 border border-slate-800 space-y-2 text-xs';
         card.innerHTML = `
           <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
             <div>
               <span class="font-bold text-white">${log.dayTag} - ${log.dayTitle}</span>
-              <p class="text-[10px] text-slate-400">${log.date}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">${log.date} • Duración: <strong class="text-sky-400">${log.duration}</strong></p>
             </div>
             <div class="flex items-center space-x-1.5">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${elbowBadge}">Codo: ${log.elbow}/5</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">RPE: ${log.rpe}</span>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${elbowBadge}">Codo: ${log.elbow}/5</span>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">RPE: ${log.rpe}</span>
             </div>
           </div>
           <div class="space-y-1 text-[11px] text-slate-300">
             ${log.exercises.map(e => `
               <div class="flex justify-between text-slate-400">
                 <span class="truncate max-w-[200px] text-slate-200">${e.name}</span>
-                <span class="font-mono text-slate-300">${e.series} series x ${e.reps} (${e.load}kg)</span>
+                <span class="font-mono text-slate-300">${e.series} series (${e.load})</span>
               </div>
             `).join('')}
           </div>
@@ -887,12 +1286,283 @@
       });
     }
 
-    // BORRAR HISTORIAL
     function clearHistory() {
-      if(confirm('¿Estás seguro de que deseas borrar todos los entrenamientos registrados?')) {
-        localStorage.removeItem('fitdumbbell_logs');
-        loadHistory();
+      if(confirm('¿Deseas borrar todo el historial de entrenamientos?')) {
+        localStorage.removeItem('fit_logs');
+        loadHistoryUI();
       }
+    }
+
+    // PESTAÑA PESO Y REGISTRO
+    function loadWeightUI() {
+      const weights = JSON.parse(localStorage.getItem('fit_weights') || '[]');
+      const profile = JSON.parse(localStorage.getItem('fit_profile') || '{}');
+
+      const listContainer = document.getElementById('weight-history-list');
+      listContainer.innerHTML = '';
+
+      if(weights.length === 0) {
+        listContainer.innerHTML = '<p class="text-xs text-slate-500 text-center py-2">Sin pesajes registrados.</p>';
+      } else {
+        weights.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(w => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-xs';
+          row.innerHTML = `
+            <span class="text-slate-400 font-mono">${w.date}</span>
+            <span class="font-bold text-white font-mono">${w.weight} kg</span>
+            <button onclick="deleteWeight(${w.id})" class="text-rose-400 hover:text-rose-300 p-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          `;
+          listContainer.appendChild(row);
+        });
+      }
+
+      // Actualizar tarjetas de estadísticas de peso
+      const lastWeight = weights.length > 0 ? weights[0].weight : (profile.initialWeight || 85.0);
+      const targetWeight = profile.targetWeight || 78.0;
+      const diff = (lastWeight - targetWeight).toFixed(1);
+
+      document.getElementById('stat-current-weight').innerText = `${lastWeight} kg`;
+      document.getElementById('stat-target-weight').innerText = `${targetWeight} kg`;
+      document.getElementById('stat-weight-diff').innerText = `${diff > 0 ? '-' + diff : '+' + Math.abs(diff)} kg`;
+
+      // Cálculo de IMC
+      const heightM = (profile.height || 175) / 100;
+      const imc = (lastWeight / (heightM * heightM)).toFixed(1);
+      document.getElementById('stat-imc-val').innerText = imc;
+
+      lucide.createIcons();
+    }
+
+    function addWeightEntry(e) {
+      e.preventDefault();
+      const val = parseFloat(document.getElementById('input-weight-val').value);
+      const date = document.getElementById('input-weight-date').value;
+
+      if(!val || !date) return;
+
+      let weights = JSON.parse(localStorage.getItem('fit_weights') || '[]');
+      weights.push({ id: Date.now(), date: date, weight: val });
+      localStorage.setItem('fit_weights', JSON.stringify(weights));
+
+      document.getElementById('input-weight-val').value = '';
+      loadWeightUI();
+      renderCharts();
+      updateProfileProgress();
+    }
+
+    function deleteWeight(id) {
+      let weights = JSON.parse(localStorage.getItem('fit_weights') || '[]');
+      weights = weights.filter(w => w.id !== id);
+      localStorage.setItem('fit_weights', JSON.stringify(weights));
+      loadWeightUI();
+      renderCharts();
+      updateProfileProgress();
+    }
+
+    // CONFIGURACIÓN Y PERFIL
+    function loadProfileUI() {
+      const prof = JSON.parse(localStorage.getItem('fit_profile') || '{}');
+      if(prof.name) document.getElementById('prof-name').value = prof.name;
+      if(prof.age) document.getElementById('prof-age').value = prof.age;
+      if(prof.height) document.getElementById('prof-height').value = prof.height;
+      if(prof.initialWeight) document.getElementById('prof-initial-weight').value = prof.initialWeight;
+      if(prof.targetWeight) document.getElementById('prof-target-weight').value = prof.targetWeight;
+
+      document.getElementById('profile-display-name').innerText = prof.name || "Jugador Pádel";
+      updateProfileProgress();
+    }
+
+    function saveProfile(e) {
+      e.preventDefault();
+      const prof = {
+        name: document.getElementById('prof-name').value,
+        age: parseInt(document.getElementById('prof-age').value),
+        height: parseFloat(document.getElementById('prof-height').value),
+        initialWeight: parseFloat(document.getElementById('prof-initial-weight').value),
+        targetWeight: parseFloat(document.getElementById('prof-target-weight').value)
+      };
+      localStorage.setItem('fit_profile', JSON.stringify(prof));
+      loadProfileUI();
+      loadWeightUI();
+      renderCharts();
+      alert('¡Perfil actualizado con éxito!');
+    }
+
+    function updateProfileProgress() {
+      const prof = JSON.parse(localStorage.getItem('fit_profile') || '{}');
+      const weights = JSON.parse(localStorage.getItem('fit_weights') || '[]');
+      const curr = weights.length > 0 ? weights[0].weight : prof.initialWeight;
+      
+      const init = prof.initialWeight || 85.0;
+      const target = prof.targetWeight || 78.0;
+
+      const totalToLose = init - target;
+      const lostSoFar = init - curr;
+      let pct = totalToLose > 0 ? Math.min(100, Math.max(0, (lostSoFar / totalToLose) * 100)) : 100;
+
+      document.getElementById('profile-progress-bar').style.width = `${pct.toFixed(0)}%`;
+      document.getElementById('profile-progress-text').innerText = `${pct.toFixed(0)}% completado`;
+    }
+
+    // GRÁFICOS CHART.JS
+    function renderCharts() {
+      const weights = JSON.parse(localStorage.getItem('fit_weights') || '[]').sort((a,b) => new Date(a.date) - new Date(b.date));
+      const profile = JSON.parse(localStorage.getItem('fit_profile') || '{}');
+      const logs = JSON.parse(localStorage.getItem('fit_logs') || '[]');
+
+      // 1. Gráfico de Peso
+      const weightCtx = document.getElementById('weightChart').getContext('2d');
+      if(weightChartInstance) weightChartInstance.destroy();
+
+      const labels = weights.map(w => w.date);
+      const weightData = weights.map(w => w.weight);
+      const targetData = weights.map(() => profile.targetWeight || 78.0);
+
+      weightChartInstance = new Chart(weightCtx, {
+        type: 'line',
+        data: {
+          labels: labels.length ? labels : ['Sin datos'],
+          datasets: [
+            {
+              label: 'Peso Corporal (kg)',
+              data: weightData.length ? weightData : [profile.initialWeight || 85],
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.15)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 3,
+              pointBackgroundColor: '#38bdf8'
+            },
+            {
+              label: 'Meta (kg)',
+              data: targetData.length ? targetData : [78],
+              borderColor: '#10b981',
+              borderDash: [5, 5],
+              borderWidth: 2,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { size: 10 } } }
+          },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { display: false } },
+            y: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: '#1e293b' } }
+          }
+        }
+      });
+
+      // 2. Gráfico de Volumen y Estado de Codo
+      const statsCtx = document.getElementById('statsChart').getContext('2d');
+      if(statsChartInstance) statsChartInstance.destroy();
+
+      const lastLogs = logs.slice(0, 6).reverse();
+      const logLabels = lastLogs.map(l => l.date.split(',')[0]);
+      const elbowData = lastLogs.map(l => parseInt(l.elbow) || 0);
+      const rpeData = lastLogs.map(l => parseInt(l.rpe) || 7);
+
+      statsChartInstance = new Chart(statsCtx, {
+        type: 'bar',
+        data: {
+          labels: logLabels.length ? logLabels : ['S1', 'S2', 'S3'],
+          datasets: [
+            {
+              label: 'Molestia Codo (0-5)',
+              data: elbowData.length ? elbowData : [0, 1, 0],
+              backgroundColor: 'rgba(244, 63, 94, 0.7)',
+              borderRadius: 6
+            },
+            {
+              label: 'Esfuerzo RPE (1-10)',
+              data: rpeData.length ? rpeData : [7, 8, 7],
+              type: 'line',
+              borderColor: '#f59e0b',
+              borderWidth: 2,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { size: 10 } } }
+          },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { display: false } },
+            y: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: '#1e293b' }, min: 0, max: 10 }
+          }
+        }
+      });
+    }
+
+    // EXPORTAR ARCHIVO .ICS PARA EL CALENDARIO DE IPHONE
+    function exportCalendarICS() {
+      const icsData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//FitDumbbell 40+//ES
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+SUMMARY:🎾 Liga de Pádel (Partido Semanal)
+DESCRIPTION:Partido oficial de liga de pádel.
+DTSTART:20261022T203000Z
+DTEND:20261022T220000Z
+RRULE:FREQ=WEEKLY;BYDAY=TH
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🏋️ FitDumbbell: Torso A
+DESCRIPTION:Fuerza e Impacto Calórico
+DTSTART:20261019T080000Z
+DTEND:20261019T084500Z
+RRULE:FREQ=WEEKLY;BYDAY=MO
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🏋️ FitDumbbell: Pierna A (Pre-Pádel)
+DESCRIPTION:Pierna pesada >48h antes del partido
+DTSTART:20261020T080000Z
+DTEND:20261020T084500Z
+RRULE:FREQ=WEEKLY;BYDAY=TU
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🏋️ FitDumbbell: Torso B (Salud Codo)
+DESCRIPTION:Higiene articular y densidad de torso
+DTSTART:20261023T080000Z
+DTEND:20261023T084500Z
+RRULE:FREQ=WEEKLY;BYDAY=FR
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🏋️ FitDumbbell: Pierna B (Unilateral)
+DESCRIPTION:Estabilidad y transferencias para Pádel
+DTSTART:20261024T080000Z
+DTEND:20261024T084500Z
+RRULE:FREQ=WEEKLY;BYDAY=SA
+END:VEVENT
+END:VCALENDAR`;
+
+      const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.setAttribute('download', 'FitDumbbell_Rutina_Padel.ics');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // UTILIDAD DE FORMATO DE TIEMPO hh:mm:ss
+    function formatTimer(totalSecs) {
+      const hrs = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+      if(hrs > 0) {
+        return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
   </script>
 </body>
