@@ -222,9 +222,11 @@
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 8px;
+      gap: 8px;
     }
 
-    .ex-title { font-size: 1rem; font-weight: 700; }
+    .ex-title { font-size: 1rem; font-weight: 700; flex: 1; }
+
     .ex-badge {
       background: rgba(56, 189, 248, 0.15);
       color: var(--accent-color);
@@ -232,6 +234,38 @@
       border-radius: 6px;
       font-size: 0.72rem;
       font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* Badge Interactivo de Peso Editable */
+    .weight-tag {
+      display: flex;
+      align-items: center;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 8px;
+      padding: 2px 6px;
+      gap: 4px;
+    }
+
+    .weight-input {
+      width: 48px;
+      background: var(--card-sub);
+      border: 1px solid var(--accent-color);
+      border-radius: 6px;
+      color: #FFF;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-align: center;
+      padding: 2px 0;
+      outline: none;
+    }
+
+    .weight-unit {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      white-space: nowrap;
     }
 
     .ex-details {
@@ -477,7 +511,7 @@
   <header>
     <div>
       <div class="user-greeting" id="displayGreeting">¡Hola! 👋</div>
-      <div class="user-sub">Programa 4 Días | Mancuernas 7.5kg</div>
+      <div class="user-sub">Programa 4 Días | Pesos Modificables</div>
     </div>
     <button type="button" class="btn-xs btn-secondary" onclick="openProfileModal()">Perfil</button>
   </header>
@@ -636,46 +670,46 @@
   <div id="toast" class="toast hidden">¡Notificación!</div>
 
   <script>
-    // BASE DE DATOS DE EJERCICIOS (4 Días x 5 Ejercicios)
+    // BASE DE DATOS DE EJERCICIOS (Con soporte para pesos editables por ejercicio)
     const WORKOUT_PROGRAM = {
       torsoA: {
         title: "Torso A (Empuje & Tracción Neutra)",
         exercises: [
-          { id: "t1", name: "1. Press de Pecho en Suelo", badge: "7.5 kg (x2)", desc: "3 series × 8-12 reps | RIR 2. Codos a 45° rozando el suelo." },
-          { id: "t2", name: "2. Remo Unilateral Apoyado", badge: "7.5 kg", desc: "3 series × 10-12 reps/lado | RIR 2. Tracciona la mancuerna hacia la cadera." },
-          { id: "t3", name: "3. Press Militar Neutro de Pie", badge: "7.5 kg (x2)", desc: "3 series × 8-10 reps | RIR 2. Palmas mirándose para proteger el codo." },
-          { id: "t4", name: "4. Elevaciones Y-T Boca Abajo", badge: "Peso Corporal", desc: "3 series × 12-15 reps | RIR 2. Junta escápulas sin forzar el cuello." },
-          { id: "t5", name: "5. Plancha con Toques de Hombro", badge: "Peso Corporal", desc: "3 series × 10 toques/lado | RIR 2. Mantén la cadera fija sin balancear." }
+          { id: "t1", name: "1. Press de Pecho en Suelo", hasWeight: true, defaultWeight: 7.5, isDouble: true, desc: "3 series × 8-12 reps | RIR 2. Codos a 45° rozando el suelo." },
+          { id: "t2", name: "2. Remo Unilateral Apoyado", hasWeight: true, defaultWeight: 7.5, isDouble: false, desc: "3 series × 10-12 reps/lado | RIR 2. Tracciona la mancuerna hacia la cadera." },
+          { id: "t3", name: "3. Press Militar Neutro de Pie", hasWeight: true, defaultWeight: 7.5, isDouble: true, desc: "3 series × 8-10 reps | RIR 2. Palmas mirándose para proteger el codo." },
+          { id: "t4", name: "4. Elevaciones Y-T Boca Abajo", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 12-15 reps | RIR 2. Junta escápulas sin forzar el cuello." },
+          { id: "t5", name: "5. Plancha con Toques de Hombro", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 10 toques/lado | RIR 2. Mantén la cadera fija sin balancear." }
         ]
       },
       piernaA: {
         title: "Pierna & Cadera A (Pre-Pádel)",
         exercises: [
-          { id: "p1", name: "1. Sentadilla Goblet", badge: "7.5 kg", desc: "3 series × 10-12 reps | RIR 2. Mancuerna pegada al pecho, baja profundo." },
-          { id: "p2", name: "2. Peso Muerto Rumano", badge: "7.5 kg (x2)", desc: "3 series × 10-12 reps | RIR 2. Empuja cadera atrás manteniendo espalda recta." },
-          { id: "p3", name: "3. Zancadas Traseras", badge: "7.5 kg (x2)", desc: "3 series × 8-10 reps/lado | RIR 2. Paso amplio atrás cuidando la rodilla." },
-          { id: "p4", name: "4. Puente de Glúteo Unilateral", badge: "Peso Corporal", desc: "3 series × 10-12 reps/lado | RIR 2. Aprieta glúteo 1s arriba." },
-          { id: "p5", name: "5. Bicho Muerto (Deadbug)", badge: "Peso Corporal", desc: "3 series × 10 reps/lado | RIR 2. Zona lumbar siempre pegada al suelo." }
+          { id: "p1", name: "1. Sentadilla Goblet", hasWeight: true, defaultWeight: 7.5, isDouble: false, desc: "3 series × 10-12 reps | RIR 2. Mancuerna pegada al pecho, baja profundo." },
+          { id: "p2", name: "2. Peso Muerto Rumano", hasWeight: true, defaultWeight: 7.5, isDouble: true, desc: "3 series × 10-12 reps | RIR 2. Empuja cadera atrás manteniendo espalda recta." },
+          { id: "p3", name: "3. Zancadas Traseras", hasWeight: true, defaultWeight: 7.5, isDouble: true, desc: "3 series × 8-10 reps/lado | RIR 2. Paso amplio atrás cuidando la rodilla." },
+          { id: "p4", name: "4. Puente de Glúteo Unilateral", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 10-12 reps/lado | RIR 2. Aprieta glúteo 1s arriba." },
+          { id: "p5", name: "5. Bicho Muerto (Deadbug)", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 10 reps/lado | RIR 2. Zona lumbar siempre pegada al suelo." }
         ]
       },
       torsoB: {
         title: "Torso B (Salud de Codo & Densidad)",
         exercises: [
-          { id: "tb1", name: "1. Flexiones de Pecho en Suelo", badge: "Peso Corporal", desc: "3 series × 8-12 reps | RIR 2. Cuerpo recto como una tabla." },
-          { id: "tb2", name: "2. Remo Inclinado Neutro", badge: "7.5 kg (x2)", desc: "3 series × 10-12 reps | RIR 2. Tracción controlada con palmas mirándose." },
-          { id: "tb3", name: "3. Elevaciones Laterales Controladas", badge: "7.5 kg / Libre", desc: "3 series × 12-15 reps | RIR 2. Sube hasta la altura de hombros." },
-          { id: "tb4", name: "4. Curl de Bíceps Martillo", badge: "7.5 kg (x2)", desc: "3 series × 10-12 reps | RIR 2. Controla la bajada en 3 segundos." },
-          { id: "tb5", name: "5. Plancha Lateral Estática", badge: "Peso Corporal", desc: "3 series × 20-30s / lado | RIR 2. Alinea cabeza, cadera y tobillos." }
+          { id: "tb1", name: "1. Flexiones de Pecho en Suelo", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 8-12 reps | RIR 2. Cuerpo recto como una tabla." },
+          { id: "tb2", name: "2. Remo Inclinado Neutro", hasWeight: true, defaultWeight: 7.5, isDouble: true, desc: "3 series × 10-12 reps | RIR 2. Tracción controlada con palmas mirándose." },
+          { id: "tb3", name: "3. Elevaciones Laterales Controladas", hasWeight: true, defaultWeight: 7.5, isDouble: false, desc: "3 series × 12-15 reps | RIR 2. Sube hasta la altura de hombros." },
+          { id: "tb4", name: "4. Curl de Bíceps Martillo", hasWeight: true, defaultWeight: 7.5, isDouble: true, desc: "3 series × 10-12 reps | RIR 2. Controla la bajada en 3 segundos." },
+          { id: "tb5", name: "5. Plancha Lateral Estática", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 20-30s / lado | RIR 2. Alinea cabeza, cadera y tobillos." }
         ]
       },
       piernaB: {
         title: "Pierna & Unilateral B (Estabilidad Pádel)",
         exercises: [
-          { id: "pb1", name: "1. Sentadilla Split Estática", badge: "7.5 kg", desc: "3 series × 10 reps/lado | RIR 2. Bajada vertical sin mover los pies." },
-          { id: "pb2", name: "2. Peso Muerto Unilateral B-Stance", badge: "7.5 kg", desc: "3 series × 10 reps/lado | RIR 2. 90% del peso en la pierna delantera." },
-          { id: "pb3", name: "3. Elevación Gemelos a 1 Pierna", badge: "Peso Corporal", desc: "3 series × 12-15 reps/lado | RIR 2. Aguanta 1 segundo arriba." },
-          { id: "pb4", name: "4. Almeja en Suelo (Clamshell)", badge: "Peso Corporal", desc: "3 series × 12-15 reps/lado | RIR 2. Activa glúteo medio sin girar cadera." },
-          { id: "pb5", name: "5. Perro de Caza (Bird-Dog)", badge: "Peso Corporal", desc: "3 series × 10 reps/lado | RIR 2. Extensión cruzada brazo-pierna lenta." }
+          { id: "pb1", name: "1. Sentadilla Split Estática", hasWeight: true, defaultWeight: 7.5, isDouble: false, desc: "3 series × 10 reps/lado | RIR 2. Bajada vertical sin mover los pies." },
+          { id: "pb2", name: "2. Peso Muerto Unilateral B-Stance", hasWeight: true, defaultWeight: 7.5, isDouble: false, desc: "3 series × 10 reps/lado | RIR 2. 90% del peso en la pierna delantera." },
+          { id: "pb3", name: "3. Elevación Gemelos a 1 Pierna", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 12-15 reps/lado | RIR 2. Aguanta 1 segundo arriba." },
+          { id: "pb4", name: "4. Almeja en Suelo (Clamshell)", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 12-15 reps/lado | RIR 2. Activa glúteo medio sin girar cadera." },
+          { id: "pb5", name: "5. Perro de Caza (Bird-Dog)", hasWeight: false, badge: "Peso Corporal", desc: "3 series × 10 reps/lado | RIR 2. Extensión cruzada brazo-pierna lenta." }
         ]
       }
     };
@@ -685,6 +719,7 @@
     let profile = null;
     let weightHistory = [];
     let workoutHistory = [];
+    let customWeights = {}; // Se guarda en localStorage { exId: weightInKg }
     let myChart = null;
 
     // Relojes
@@ -692,7 +727,6 @@
     let workoutSeconds = 0;
     let workoutInterval = null;
 
-    let activeExId = null;
     let exTimers = {}; // { exId: { seconds: 0, interval: null, running: false } }
 
     let restSeconds = 60;
@@ -702,8 +736,29 @@
       loadProfile();
       loadWeightHistory();
       loadWorkoutHistory();
+      loadCustomWeights();
       renderExercises();
     });
+
+    // Cargar y Guardar Pesos Personalizados
+    function loadCustomWeights() {
+      const saved = localStorage.getItem('fit_custom_weights');
+      if (saved) {
+        try { customWeights = JSON.parse(saved); } catch(e){}
+      }
+    }
+
+    function getExWeight(exId, defaultVal) {
+      return customWeights[exId] !== undefined ? customWeights[exId] : defaultVal;
+    }
+
+    function setExWeight(exId, newVal) {
+      const val = parseFloat(newVal);
+      if (!isNaN(val) && val >= 0) {
+        customWeights[exId] = val;
+        localStorage.setItem('fit_custom_weights', JSON.stringify(customWeights));
+      }
+    }
 
     // Cargar y Guardar Perfil
     function loadProfile() {
@@ -786,21 +841,31 @@
       renderExercises();
     }
 
-    // RENDERIZAR LOS 5 EJERCICIOS EXACTOS CON SUS BOTONES
+    // RENDERIZAR LOS 5 EJERCICIOS CON CAMPOS DE PESO EDITABLES
     function renderExercises() {
       const container = document.getElementById('exercisesContainer');
       const session = WORKOUT_PROGRAM[currentSessionKey];
       
-      container.innerHTML = session.exercises.map((ex, index) => {
+      container.innerHTML = session.exercises.map((ex) => {
         if (!exTimers[ex.id]) {
           exTimers[ex.id] = { seconds: 0, interval: null, running: false };
         }
+
+        const weightValue = getExWeight(ex.id, ex.defaultWeight);
+
+        // Badge interactivas si tiene mancuernas
+        const badgeHtml = ex.hasWeight ? `
+          <div class="weight-tag">
+            <input type="number" step="0.5" min="0" value="${weightValue}" onchange="setExWeight('${ex.id}', this.value)" class="weight-input">
+            <span class="weight-unit">kg ${ex.isDouble ? '(x2)' : ''}</span>
+          </div>
+        ` : `<div class="ex-badge">${ex.badge}</div>`;
 
         return `
           <div class="exercise-card">
             <div class="ex-header">
               <div class="ex-title">${ex.name}</div>
-              <div class="ex-badge">${ex.badge}</div>
+              ${badgeHtml}
             </div>
             <div class="ex-details">${ex.desc}</div>
 
@@ -823,7 +888,7 @@
       }).join('');
     }
 
-    // CONTROLE DE SESIÓN GENERAL
+    // CONTROL DE SESIÓN GENERAL
     function startWorkoutSession() {
       isWorkoutActive = true;
       workoutSeconds = 0;
@@ -982,7 +1047,7 @@
       `).join('');
     }
 
-    // MANEJO DE PESO
+    // MANEJO DE PESO CORPORAL
     function loadWeightHistory() {
       const saved = localStorage.getItem('fit_weights');
       if (saved) weightHistory = JSON.parse(saved);
